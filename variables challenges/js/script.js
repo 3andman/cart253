@@ -23,5 +23,5 @@ function draw() {
     //color of elipse
     fill(255,0,0)
     // x,y,width,height
-    ellipse(width/2,height/2,50,50)
+    ellipse(mouseX,mouseY,50,50)
     pop()}
