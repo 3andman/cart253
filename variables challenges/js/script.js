@@ -1,9 +1,8 @@
 /**
- * Title of Project
- * Author Name
+ * UFO!!!
+ * Dylan Samaan
  *
- * HOW EMBARRASSING! I HAVE NO DESCRIPTION OF MY PROJECT!
- * PLEASE REMOVE A GRADE FROM MY WORK IF IT'S GRADED!
+ * I've got some flickering stars and a flying UFO!
  */
 
 let UfoBase = {
