@@ -8,34 +8,44 @@
 
 "use strict";
 
-let clown = (
-    x: 25,
-    y: 50
-    
-)
 
-/**
- * OH LOOK I DIDN'T DESCRIBE SETUP!!
-*/
+let spider = {
+    x:500
+    y:500
+    size:50
+    speedX:2
+    speedY:3
+}
+
 function setup() {
-createCanvas(1000, 1000,)
+    createCanvas(1000, 1000);
+}
+
+function moveCircle() {
+    spider.x += spider.speedX;
+    spider.y += spider.speedY;
+    if (spider.y > height) {
+        //spider.y = 0
+        spider.speedY = spider.speedY*-1
+    }
+    
+    if (spider.x > width) {
+        spider.x = 0
+        spider.speedX = spider.speedX*-1
+    }
 }
 
 
-/**
- * OOPS I DIDN'T DESCRIBE WHAT MY DRAW DOES!
-*/
-function draw() {
-    background("#ffff");
-    
-    let x = 10;
-    let y = 20;
-    
-    if (mouseX > x) {
-        if (mouseY > y) {
-            drawSquare;
-        }
-        
-    }
+function drawCircle() {
+    push();
+    fill("#ffff");
+    noStroke();
+    ellipse(spider.x, spider.y, spider.size, spider.size);
+    pop()
+}
 
+function draw() {
+    background("#c49fc2ff");
+    drawCircle();
+    moveCircle();
 }
