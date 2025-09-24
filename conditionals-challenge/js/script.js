@@ -8,11 +8,17 @@
 
 "use strict";
 
+let clown = (
+    x: 25,
+    y: 50
+    
+)
+
 /**
  * OH LOOK I DIDN'T DESCRIBE SETUP!!
 */
 function setup() {
-
+createCanvas(1000, 1000,)
 }
 
 
@@ -20,5 +26,16 @@ function setup() {
  * OOPS I DIDN'T DESCRIBE WHAT MY DRAW DOES!
 */
 function draw() {
+    background("#ffff");
+    
+    let x = 10;
+    let y = 20;
+    
+    if (mouseX > x) {
+        if (mouseY > y) {
+            drawSquare;
+        }
+        
+    }
 
 }
