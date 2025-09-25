@@ -19,6 +19,8 @@ function setup() {
       x: random(width),
       y: random(height),
       size: random(1, 3),
+      phase: random(TWO_PI),
+      speed: random(0.01, 0.05),
     });
   }
 }
@@ -28,7 +30,13 @@ function draw() {
 
   for (let i = 0; i < stars.length; i++) {
     let star = stars[i];
-    let brightness = map(sin(frameCount * 0.02 + star.phase), -1, 1, 150, 255);
+    let brightness = map(
+      sin(frameCount * star.speed + star.phase),
+      -1,
+      1,
+      10,
+      300
+    );
     fill(brightness);
     ellipse(star.x, star.y, star.size);
   }
