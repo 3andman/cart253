@@ -36,7 +36,7 @@ const target = {
   fill: "#391e33ff",
   fills: {
     noOverlap: "#391e33ff",
-    overlap: "#ffffffff",
+    overlap: "#8e536dff",
   },
 };
 
@@ -58,11 +58,9 @@ function draw() {
   // Move user circle
   moveUser();
 
-  // Draw the user and puck
+  // Draw the user and puck and the target
   drawUser();
   drawPuck();
-
-  // Draw the Target
   drawTarget();
 
   // Move the puck
@@ -73,28 +71,24 @@ function draw() {
 
   const d = dist(puck.x, puck.y, user.x, user.y);
 
-  const overlap = d < puck.size / 2 + user.size / 2;
+  const overlap = d < puck.size / 0.35 + user.size / 0.35;
 
   const dt = dist(target.x, target.y, puck.x, puck.y);
 
-  const toverlap = dt < puck.size / 2 + target.size / 2;
+  const toverlap = dt < puck.size / 6 + target.size / 6;
 
   if (overlap) {
-    user.fill = user.fills.overlap;
-    puck.fill = puck.fills.overlap;
     if (dx > 0) {
-      puck.x += dx / 20;
+      puck.x -= dx / 25;
     } else if (dx < 0) {
-      puck.x += dx / 20;
+      puck.x -= dx / 25;
     }
     if (dy > 0) {
-      puck.y += dy / 20;
+      puck.y -= dy / 25;
     } else if (dy < 0) {
-      puck.y += dy / 20;
+      puck.y -= dy / 25;
     }
   } else {
-    user.fill = user.fills.noOverlap;
-    puck.fill = puck.fills.noOverlap;
   }
 
   if (toverlap) target.fill = target.fills.overlap;
