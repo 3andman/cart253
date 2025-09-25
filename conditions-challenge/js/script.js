@@ -30,8 +30,8 @@ const user = {
 };
 
 const target = {
-  x: 250,
-  y: 250,
+  x: 500,
+  y: 500,
   size: 200,
   fill: "#391e33ff",
   fills: {
