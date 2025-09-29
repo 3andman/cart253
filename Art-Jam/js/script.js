@@ -1,9 +1,8 @@
 /**
- * Title of Project
+ * Inside Dylan's Mind
  * Dylan Samaan
  *
- * HOW EMBARRASSING! I HAVE NO DESCRIPTION OF MY PROJECT!
- * PLEASE REMOVE A GRADE FROM MY WORK IF IT'S GRADED!
+ * Oh my gosh I dug myself into a hole with this one.
  */
 
 "use strict";
@@ -18,6 +17,8 @@ let laneLength = 30;
 let laneSpacing = 50;
 let trees = [];
 let treeSpeed = 0.7;
+let backTrees = [];
+let backTreeSpeed = 0.3;
 
 function setup() {
   createCanvas(1000, 800);
@@ -26,11 +27,39 @@ function setup() {
   // Road Lines
   for (let x = 0; x < width + laneLength; x += laneLength + laneSpacing) {
     roadLines.push({ x: x, y: height - roadHeight / 2 });
+  }
 
-    // Trees in Background
-    for (let x = 0; x < width; x += 120) {
-      trees.push({ x: x, y: height - roadHeight - 40 });
+  // Front row trees
+  let spacing = 100;
+  for (let x = 0; x < width + 200; x += spacing) {
+    trees.push({
+      x: x + random(-30, 30),
+      y: height - roadHeight - 40,
+      type: random() < 0.7 ? "pine" : "round", // pine more common
+      scale: random(0.8, 1.4),
+    });
+  }
+
+  // Back row trees
+  let lastBackX = -999;
+  let backSpacing = 60;
+
+  for (let x = 0; x < width + 100; x += backSpacing) {
+    let tx = x + random(-20, 20);
+
+    // gap from last tree
+    if (tx - lastBackX < backSpacing) {
+      tx = lastBackX + backSpacing + random(0, 20);
     }
+
+    backTrees.push({
+      x: tx,
+      y: height - roadHeight - 40,
+      type: random() < 0.7 ? "pine" : "round",
+      scale: random(0.5, 1.0),
+    });
+
+    lastBackX = tx; // remember last tree’s position
   }
 
   // Making Twinkling Stars
@@ -121,30 +150,97 @@ function draw() {
   ellipse(140, 160, 10);
   ellipse(160, 170, 7);
 
-  // Draw Mountains
+  // Draw the Mountains
   drawMountains();
 
   // Draw the Grass
   fill(60, 90, 60);
   rect(0, height - roadHeight - 40, width, 50);
 
-  // Draw the Trees
-  fill(80, 50, 20);
-  for (let tree of trees) {
-    rect(tree.x + 10, tree.y - 40, 10, 40);
-    fill(30, 120, 30);
-    ellipse(tree.x + 15, tree.y - 60, 50, 50);
-    ellipse(tree.x, tree.y - 50, 50, 50);
-    ellipse(tree.x + 30, tree.y - 50, 50, 50);
-    fill(80, 50, 20);
+  // Draw back trees
+  for (let tree of backTrees) {
+    push();
+    translate(tree.x, tree.y);
+    scale(tree.scale);
 
-    // Move the Trees
+    if (tree.type === "round") {
+      fill(30, 80, 30);
+      stroke(10, 50, 10);
+      rect(10, -40, 8, 40);
+      ellipse(15, -55, 40, 40);
+      ellipse(0, -45, 40, 40);
+      ellipse(30, -45, 40, 40);
+    } else if (tree.type === "pine") {
+      fill(20, 70, 20);
+      stroke(10, 40, 10);
+      rect(8, -40, 6, 40);
+      triangle(-18, -40, 34, -40, 8, -80);
+      triangle(-13, -60, 28, -60, 8, -100);
+      triangle(-8, -80, 23, -80, 8, -120);
+    }
 
-    tree.x -= treeSpeed;
+    pop();
 
-    //Loop it
+    // Move back tree
+    tree.x -= backTreeSpeed;
     if (tree.x < -50) {
-      tree.x = width + 50;
+      // Make sure it’s not too close to other trees
+      let maxX = width + random(50, 200);
+      let minGap = 60;
+
+      let rightmost = max(backTrees.map((t) => t.x));
+      tree.x = max(maxX, rightmost + minGap);
+
+      tree.type = random() < 0.7 ? "pine" : "round";
+      tree.scale = random(0.5, 1.0);
+    }
+  }
+
+  // Draw Front Trees
+  for (let tree of trees) {
+    push();
+    translate(tree.x, tree.y);
+    scale(tree.scale);
+
+    stroke(10, 60, 10);
+    strokeWeight(0.5);
+
+    if (tree.type === "round") {
+      // Round Trunk
+      noStroke();
+      fill(80, 50, 20);
+      rect(10, -40, 10, 40);
+
+      // Round Leaves
+      stroke(5, 40, 5);
+      strokeWeight(0.5);
+      fill(30, 120, 30);
+      ellipse(15, -60, 50, 50);
+      ellipse(0, -50, 50, 50);
+      ellipse(30, -50, 50, 50);
+    } else if (tree.type === "pine") {
+      // Pine Trunk
+      noStroke();
+      fill(80, 50, 20);
+      rect(3, -40, 10, 40);
+
+      // Pine leaves
+      stroke(5, 40, 5);
+      strokeWeight(0.5);
+      fill(20, 100, 20);
+      triangle(-20, -40, 35, -40, 7.5, -80);
+      triangle(-15, -60, 30, -60, 7.5, -100);
+      triangle(-10, -80, 25, -80, 7.5, -120);
+    }
+
+    pop();
+
+    // Move tree inside the loop
+    tree.x -= treeSpeed;
+    if (tree.x < -50) {
+      tree.x = width + random(50, 150);
+      tree.type = random() < 0.5 ? "round" : "pine";
+      tree.scale = random(1, 1.7);
     }
   }
 
@@ -163,6 +259,7 @@ function draw() {
     }
   }
 }
+
 // Spawn Meteor Shower
 function mousePressed() {
   let count = int(random(4, 7));
@@ -185,17 +282,17 @@ function mousePressed() {
 
 function drawMountains() {
   noStroke();
-
+  // Back Layer
   fill(180);
   triangle(100, 650, 300, 300, 500, 650);
   triangle(400, 650, 650, 250, 900, 650);
 
-  // Middle layer (medium gray)
+  // Middle layer
   fill(120);
   triangle(250, 650, 450, 350, 700, 650);
   triangle(600, 650, 850, 300, 1050, 650);
 
-  // Foreground mountains (darkest gray)
+  // Foreground Layer
   fill(90);
   triangle(-50, 650, 200, 400, 450, 650);
   triangle(350, 650, 600, 380, 850, 650);
