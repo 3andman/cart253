@@ -42,14 +42,14 @@ function setup() {
 
   // Back row trees
   let lastBackX = -999;
-  let backSpacing = 60;
+  let backSpacing = random(10, 30);
 
   for (let x = 0; x < width + 100; x += backSpacing) {
     let tx = x + random(-20, 20);
 
     // gap from last tree
     if (tx - lastBackX < backSpacing) {
-      tx = lastBackX + backSpacing + random(0, 20);
+      tx = lastBackX + backSpacing + random(3, 20);
     }
 
     backTrees.push({
