@@ -13,9 +13,11 @@ let nextShootingStar = 0;
 let stars = [];
 let roadLines = [];
 let roadLineSpeed = 5;
-let roadHeight = 150;
+let roadHeight = 170;
 let laneLength = 30;
 let laneSpacing = 50;
+let trees = [];
+let treeSpeed = 1.5;
 
 function setup() {
   createCanvas(1000, 800);
@@ -24,6 +26,11 @@ function setup() {
   // Road Lines
   for (let x = 0; x < width + laneLength; x += laneLength + laneSpacing) {
     roadLines.push({ x: x, y: height - roadHeight / 2 });
+
+    // Trees in Background
+    for (let x = 0; x < width; x += 120) {
+      trees.push({ x: x, y: height - roadHeight - 40 });
+    }
   }
 
   // Making Twinkling Stars
@@ -114,6 +121,13 @@ function draw() {
   ellipse(140, 160, 10);
   ellipse(160, 170, 7);
 
+  // Draw Mountains
+  drawMountains();
+
+  //
+  fill(60, 90, 60);
+  rect(0, height - roadHeight - 40, width, 50);
+
   // Draw the Road
   fill(50);
   rect(0, height - roadHeight, width, roadHeight);
@@ -147,4 +161,22 @@ function mousePressed() {
       len: random(1, 3),
     });
   }
+}
+
+function drawMountains() {
+  noStroke();
+
+  fill(180);
+  triangle(100, 650, 300, 300, 500, 650);
+  triangle(400, 650, 650, 250, 900, 650);
+
+  // Middle layer (medium gray)
+  fill(120);
+  triangle(250, 650, 450, 350, 700, 650);
+  triangle(600, 650, 850, 300, 1050, 650);
+
+  // Foreground mountains (darkest gray)
+  fill(90);
+  triangle(-50, 650, 200, 400, 450, 650);
+  triangle(350, 650, 600, 380, 850, 650);
 }
