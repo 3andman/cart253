@@ -11,10 +11,20 @@
 let shootingStars = [];
 let nextShootingStar = 0;
 let stars = [];
+let roadLines = [];
+let roadLineSpeed = 5;
+let roadHeight = 150;
+let laneLength = 30;
+let laneSpacing = 50;
 
 function setup() {
   createCanvas(1000, 800);
   noStroke();
+
+  // Road Lines
+  for (let x = 0; x < width + laneLength; x += laneLength + laneSpacing) {
+    roadLines.push({ x: x, y: height - roadHeight / 2 });
+  }
 
   // Making Twinkling Stars
   for (let i = 0; i < 300; i++) {
@@ -87,6 +97,37 @@ function draw() {
       shootingStars.splice(i, 1);
     }
   }
+
+  //Draw the moon
+  noStroke();
+
+  for (let r = 200; r > 50; r -= 30) {
+    fill(255, 255, 200, map(r, 200, 50, 10, 60));
+    ellipse(150, 150, r);
+  }
+
+  fill(240, 240, 220);
+  ellipse(150, 150, 100);
+
+  fill(200, 200, 180, 180);
+  ellipse(170, 140, 15);
+  ellipse(140, 160, 10);
+  ellipse(160, 170, 7);
+
+  // Draw the Road
+  fill(50);
+  rect(0, height - roadHeight, width, roadHeight);
+  fill(40);
+
+  fill(255);
+  for (let line of roadLines) {
+    rect(line.x, line.y - 5, laneLength, 10);
+    line.x -= roadLineSpeed;
+
+    if (line.x + laneLength < 0) {
+      line.x = width;
+    }
+  }
 }
 // Spawn Meteor Shower
 function mousePressed() {
@@ -96,7 +137,7 @@ function mousePressed() {
     let startY = random(height / 2);
 
     let angle = random(PI / 6, PI / 3);
-    let speed = random(6, 9);
+    let speed = random(4, 6);
 
     shootingStars.push({
       x: startX,
