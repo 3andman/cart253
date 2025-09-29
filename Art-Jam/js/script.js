@@ -17,7 +17,7 @@ let roadHeight = 170;
 let laneLength = 30;
 let laneSpacing = 50;
 let trees = [];
-let treeSpeed = 1.5;
+let treeSpeed = 0.7;
 
 function setup() {
   createCanvas(1000, 800);
@@ -124,9 +124,29 @@ function draw() {
   // Draw Mountains
   drawMountains();
 
-  //
+  // Draw the Grass
   fill(60, 90, 60);
   rect(0, height - roadHeight - 40, width, 50);
+
+  // Draw the Trees
+  fill(80, 50, 20);
+  for (let tree of trees) {
+    rect(tree.x + 10, tree.y - 40, 10, 40);
+    fill(30, 120, 30);
+    ellipse(tree.x + 15, tree.y - 60, 50, 50);
+    ellipse(tree.x, tree.y - 50, 50, 50);
+    ellipse(tree.x + 30, tree.y - 50, 50, 50);
+    fill(80, 50, 20);
+
+    // Move the Trees
+
+    tree.x -= treeSpeed;
+
+    //Loop it
+    if (tree.x < -50) {
+      tree.x = width + 50;
+    }
+  }
 
   // Draw the Road
   fill(50);
