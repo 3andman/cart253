@@ -28,10 +28,18 @@ let trees = []; //Front Row Tree Values
 let treeSpeed = 0.7; //Speed of Front Row Trees
 let backTrees = []; //Back Row Tree Values
 let backTreeSpeed = 0.3; //Speed of Back Row Trees
+let layla;
+
+function preload() {
+  soundFormats("mp3");
+  layla = loadSound("./layla.mp3");
+}
 
 function setup() {
   createCanvas(1000, 800);
   noStroke(); //Defaults shapes to have no stroke
+
+  layla.play();
 
   // Road Lines Setup
   //Loops them and places them at equal X spacing, X changes each frame
