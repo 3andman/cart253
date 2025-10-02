@@ -3,6 +3,15 @@
  * Dylan Samaan
  *
  * Oh my gosh I dug myself into a hole with this one.
+ * I wanted a stary sky that flickers, with shooting stars and
+ * a meteor shower when you press the mouse. I want a nice moon and montains
+ * and a foreground with a road and trees that are moving as if the
+ * viewer is flying to the left following a car. I want the car to look
+ * specifically like my favorite car lol, and I want it to flash it's
+ * headlights when you click spacebar.
+ *
+ *I did not get to make the car in time :(
+ *I'll come back to the project whenever I have free time.
  */
 
 "use strict";
@@ -166,10 +175,6 @@ function draw() {
   // Draw the Mountains
   drawMountains();
 
-  // Draw the Grass
-  fill(60, 90, 60);
-  rect(0, height - roadHeight - 40, width, 50); // Rect right above the road
-
   // Draw back trees
   for (let tree of backTrees) {
     // Loops the back trees
@@ -265,6 +270,9 @@ function draw() {
       tree.scale = random(1, 1.7);
     }
   }
+  // Draw the Grass
+  fill(60, 90, 60);
+  rect(0, height - roadHeight - 40, width, 50); // Rect right above the road
 
   // Draw the Road
   fill(50);
