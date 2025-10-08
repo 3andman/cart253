@@ -40,6 +40,7 @@ function setup() {
   noStroke(); //Defaults shapes to have no stroke
 
   layla.play();
+  layla.setVolume(0.3);
 
   // Road Lines Setup
   //Loops them and places them at equal X spacing, X changes each frame
@@ -136,7 +137,7 @@ function draw() {
       len: random(1, 3), //Trail length variety
     });
 
-    nextShootingStar = frameCount + int(random(100, 500)); // Wait before next one
+    nextShootingStar = frameCount + int(random(50, 150)); // Wait before next one
   }
 
   //  Draw & Update Shooting Stars
@@ -271,7 +272,7 @@ function draw() {
 
     // Move tree inside the loop
     tree.x -= treeSpeed; // Moves trees to the left
-    if (tree.x < -80) {
+    if (tree.x < -100) {
       // Respawn tree when it goes off-screen
       tree.x = width + random(50, 150);
       tree.type = random() < 0.5 ? "round" : "pine";
