@@ -51,19 +51,22 @@ function setup() {
 
   // Position the Poké Ball where i want it
   ball.body.y = height - ball.body.size / 2 - 25;
+  ball.body.vy = 0; // velocity
+  ball.body.state = "idle"; // idle, thrown, returning
 
   // Give the fly its first random position
   resetFly();
+
+  let sparkles = [];
 }
 
 function draw() {
-  background("#87ceeb");
+  background("#e5d7cfff");
   moveFly();
   drawFly();
-  moveFrog();
-  moveTongue();
-  drawFrog();
-  checkTongueFlyOverlap();
+  moveBall();
+  drawBall();
+  checkCatch();
 }
 
 /**
@@ -99,65 +102,64 @@ function resetFly() {
 }
 
 /**
- * Moves the frog to the mouse position on x
+ * Moves the ball to the mouse position on x
  */
-function moveFrog() {
+function guideBall() {
   ball.body.x = mouseX;
 }
 
 /**
- * Handles moving the tongue based on its state
+ * Handles moving the ball based on its state
  */
-function moveTongue() {
-  // Tongue matches the frog's x
-  ball.tongue.x = ball.body.x;
-  // If the tongue is idle, it doesn't do anything
-  if (ball.tongue.state === "idle") {
-    // Do nothing
-  }
-  // If the tongue is outbound, it moves up
-  else if (ball.tongue.state === "outbound") {
-    ball.tongue.y += -ball.tongue.speed;
-    // The tongue bounces back if it hits the top
-    if (ball.tongue.y <= 0) {
-      ball.tongue.state = "inbound";
+function moveBall() {
+  const groundY = height - ball.body.size / 2 - 25;
+
+  if (ball.body.state === "idle") {
+    // Follow mouse X when not thrown
+    ball.body.x = mouseX;
+    ball.body.y = groundY;
+  } else if (ball.body.state === "thrown") {
+    // Apply velocity + gravity
+    ball.body.y += ball.body.vy;
+    ball.body.vy += 1;
+
+    // If it goes off bottom of screen — start reload
+    if (ball.body.y > height + ball.body.size) {
+      ball.body.state = "reloadPause";
+      ball.body.y = height + ball.body.size; // start below screen
+      ball.body.reloadTimer = 35; // pause for ~35  frames
     }
-  }
-  // If the tongue is inbound, it moves down
-  else if (ball.tongue.state === "inbound") {
-    ball.tongue.y += ball.tongue.speed;
-    // The tongue stops if it hits the bottom
-    if (ball.tongue.y >= height) {
-      ball.tongue.state = "idle";
+  } else if (ball.body.state === "reloadPause") {
+    // Countdown before starting upward slide
+    ball.body.reloadTimer--;
+    ball.body.x = mouseX; // always follow mouse during pause
+
+    if (ball.body.reloadTimer <= 0) {
+      ball.body.state = "reloading";
+    }
+  } else if (ball.body.state === "reloading") {
+    // Slide upward smoothly
+    ball.body.y -= 10;
+    ball.body.x = mouseX; // follow mouse during reload
+
+    if (ball.body.y <= groundY) {
+      // Snap into place
+      ball.body.y = groundY;
+      ball.body.state = "idle";
+      ball.body.vy = 0;
     }
   }
 }
 
 /**
- * Displays the tongue (tip and line connection) and the frog (body)
+ * Creates the Pokeball
  */
-function drawFrog() {
-  // Draw the tongue tip
-  push();
-  fill("#ff0000");
-  noStroke();
-  ellipse(ball.tongue.x, ball.tongue.y, ball.tongue.size);
-  pop();
-
-  // Draw the tongue line (thinner so it doesn't cover Poké Ball)
-  push();
-  stroke("#ff0000");
-  strokeWeight(ball.tongue.size / 2);
-  line(ball.tongue.x, ball.tongue.y, ball.body.x, ball.body.y);
-  pop();
-
-  // --- Draw Poké Ball body ---
+function drawBall() {
   push();
   translate(ball.body.x, ball.body.y);
-  // Outer circle (we draw halves using arcs)
-  noStroke();
 
   // Top half (red)
+  noStroke();
   fill("#dd3434ff");
   arc(0, 0, ball.body.size, ball.body.size, PI, 0, CHORD);
 
@@ -165,12 +167,12 @@ function drawFrog() {
   fill("#e9e9e9ff");
   arc(0, 0, ball.body.size, ball.body.size, 0, PI, CHORD);
 
-  // Thick black horizontal band
+  // Black band
   stroke("#000000");
   strokeWeight(8);
   line(-ball.body.size / 2, 0, ball.body.size / 2, 0);
 
-  // Inner white button (center)
+  // Center button
   noStroke();
   fill("#cbcbcbff");
   ellipse(0, 0, ball.body.size / 4.5);
@@ -178,26 +180,22 @@ function drawFrog() {
 }
 
 /**
- * Handles the tongue overlapping the fly
+ * Handles the ball overlapping the fly
  */
-function checkTongueFlyOverlap() {
-  // Get distance from tongue to fly
-  const d = dist(ball.tongue.x, ball.tongue.y, fly.x, fly.y);
-  // Check if it's an overlap
-  const eaten = d < ball.tongue.size / 2 + fly.size / 2;
-  if (eaten) {
-    // Reset the fly
+function checkCatch() {
+  const d = dist(ball.body.x, ball.body.y, fly.x, fly.y);
+  if (d < ball.body.size / 2 + fly.size / 2 && ball.body.state === "thrown") {
     resetFly();
-    // Bring back the tongue
-    ball.tongue.state = "inbound";
+    ball.body.state = "returning";
   }
 }
 
 /**
- * Launch the tongue on click (if it's not launched yet)
+ * Launch the ball on click (if it's not launched yet)
  */
 function mousePressed() {
-  if (ball.tongue.state === "idle") {
-    ball.tongue.state = "outbound";
+  if (ball.body.state === "idle") {
+    ball.body.state = "thrown";
+    ball.body.vy = -42;
   }
 }
