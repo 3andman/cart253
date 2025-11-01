@@ -14,14 +14,14 @@
  */
 
 "use strict";
-
+let sparkles = [];
 // Our frog
 const ball = {
   // The frog's body has a position and size
   body: {
     x: 320,
     y: 0,
-    size: 100,
+    size: 80,
   },
   // The frog's tongue has a position, size, speed, and state
   tongue: {
@@ -51,13 +51,10 @@ function setup() {
 
   // Position the Poké Ball where i want it
   ball.body.y = height - ball.body.size / 2 - 25;
-  ball.body.vy = 0; // velocity
   ball.body.state = "idle"; // idle, thrown, returning
 
   // Give the fly its first random position
   resetFly();
-
-  let sparkles = [];
 }
 
 function draw() {
@@ -66,6 +63,7 @@ function draw() {
   drawFly();
   moveBall();
   drawBall();
+  updateSparkles();
   checkCatch();
 }
 
@@ -98,7 +96,7 @@ function drawFly() {
  */
 function resetFly() {
   fly.x = 0;
-  fly.y = random(0, 300);
+  fly.y = random(100, 500);
 }
 
 /**
@@ -148,6 +146,14 @@ function moveBall() {
       ball.body.state = "idle";
       ball.body.vy = 0;
     }
+  } else if (ball.body.state === "caught") {
+    // Pause in midair
+    ball.body.catchTimer--;
+    if (ball.body.catchTimer <= 0) {
+      // Start falling offscreen after pause
+      ball.body.state = "thrown";
+      ball.body.vy = 5; // small downward start
+    }
   }
 }
 
@@ -185,8 +191,11 @@ function drawBall() {
 function checkCatch() {
   const d = dist(ball.body.x, ball.body.y, fly.x, fly.y);
   if (d < ball.body.size / 2 + fly.size / 2 && ball.body.state === "thrown") {
-    resetFly();
-    ball.body.state = "returning";
+    // Set ball to caught state
+    ball.body.state = "caught";
+    ball.body.catchTimer = 15; // frames to pause in midair
+    spawnSparkles(fly.x, fly.y); // generate sparkles
+    resetFly(); // reset fly immediately or after sparkle?
   }
 }
 
@@ -197,5 +206,33 @@ function mousePressed() {
   if (ball.body.state === "idle") {
     ball.body.state = "thrown";
     ball.body.vy = -42;
+  }
+}
+
+function spawnSparkles(x, y) {
+  sparkles = [];
+  for (let i = 0; i < 10; i++) {
+    sparkles.push({
+      x: x,
+      y: y,
+      vx: random(-5, 5),
+      vy: random(-4, -8),
+      alpha: 255,
+      size: random(6, 12),
+    });
+  }
+}
+
+function updateSparkles() {
+  for (let i = sparkles.length - 1; i >= 0; i--) {
+    let s = sparkles[i];
+    s.x += s.vx;
+    s.y += s.vy;
+    s.vy += 0.2; // gravity
+    s.alpha -= 10;
+    fill(255, 255, 0, s.alpha);
+    noStroke();
+    ellipse(s.x, s.y, s.size);
+    if (s.alpha <= 0) sparkles.splice(i, 1);
   }
 }
