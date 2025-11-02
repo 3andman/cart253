@@ -15,120 +15,137 @@
 
 "use strict";
 let sparkles = [];
-// Our frog
+let archeopsImg, pidgeotImg, emolgaImg;
+let flies = [];
+
+function preload() {
+  archeopsImg = loadImage("assets/archeops.webp");
+  pidgeotImg = loadImage("assets/pidgeot.webp");
+  emolgaImg = loadImage("assets/emolga.png");
+}
+
 const ball = {
-  // The frog's body has a position and size
   body: {
     x: 320,
     y: 0,
     size: 80,
   },
-  // The frog's tongue has a position, size, speed, and state
-  tongue: {
-    x: undefined,
-    y: 480,
-    size: 20,
-    speed: 20,
-    // Determines how the tongue moves each frame
-    state: "idle", // State can be: idle, outbound, inbound
-  },
-};
-
-// Our fly
-// Has a position, size, and speed of horizontal movement
-const fly = {
-  x: 0,
-  y: 200, // Will be random
-  size: 10,
-  speed: 3,
 };
 
 /**
- * Creates the canvas and initializes the fly
+ 
  */
 function setup() {
   createCanvas(720, 1080);
+  imageMode(CENTER);
 
-  // Position the Poké Ball where i want it
+  flies.push(createMon("archeops"));
+  flies.push(createMon("pidgeot"));
+  flies.push(createMon("emolga"));
+
   ball.body.y = height - ball.body.size / 2 - 25;
-  ball.body.state = "idle"; // idle, thrown, returning
+  ball.body.state = "idle";
+}
 
-  // Give the fly its first random position
-  resetFly();
+function createMon(type) {
+  let props;
+  switch (type) {
+    case "archeops":
+      props = {
+        img: archeopsImg,
+        size: random(120, 150),
+        baseSpeed: random(2, 4),
+        rotationSpeed: random(-0.02, 0.02),
+      };
+      break;
+    case "pidgeot":
+      props = {
+        img: pidgeotImg,
+        size: random(90, 120),
+        baseSpeed: random(4, 6),
+        rotationSpeed: random(-0.04, 0.04),
+      };
+      break;
+    case "emolga":
+      props = {
+        img: emolgaImg,
+        size: random(60, 80),
+        baseSpeed: random(6, 8),
+        rotationSpeed: random(-0.08, 0.08),
+      };
+      break;
+  }
+
+  const angle = random(-PI / 4, PI / 4);
+  const speed = props.baseSpeed;
+  return {
+    type,
+    img: props.img,
+    x: random(width),
+    y: random(100, 400),
+    vx: cos(angle) * speed * (random() < 0.5 ? -1 : 1),
+    vy: sin(angle) * speed,
+    size: props.size,
+    rotation: random(TWO_PI),
+    rotationSpeed: props.rotationSpeed,
+  };
 }
 
 function draw() {
   background("#e5d7cfff");
-  moveFly();
-  drawFly();
+  moveMon();
+  drawMon();
   moveBall();
   drawBall();
   updateSparkles();
   checkCatch();
 }
 
-/**
- * Moves the fly according to its speed
- * Resets the fly if it gets all the way to the right
- */
-function moveFly() {
-  // Move the fly
-  fly.x += fly.speed;
-  // Handle the fly going off the canvas
-  if (fly.x > width) {
-    resetFly();
+function moveMon() {
+  for (let Mon of flies) {
+    Mon.x += Mon.vx;
+    Mon.y += Mon.vy;
+    Mon.rotation += Mon.rotationSpeed;
+
+    Mon.y += sin(frameCount * 0.05 + Mon.x * 0.01) * 0.8;
+
+    if (
+      Mon.x > width + Mon.size ||
+      Mon.x < -Mon.size ||
+      Mon.y > height + Mon.size ||
+      Mon.y < -Mon.size
+    ) {
+      Object.assign(Mon, createMon(Mon.type));
+    }
   }
 }
 
-/**
- * Draws the fly as a black circle
- */
-function drawFly() {
-  push();
-  noStroke();
-  fill("#000000");
-  ellipse(fly.x, fly.y, fly.size);
-  pop();
+function drawMon() {
+  for (let Mon of flies) {
+    push();
+    translate(Mon.x, Mon.y);
+    rotate(Mon.rotation);
+    image(Mon.img, 0, 0, Mon.size, Mon.size);
+    pop();
+  }
 }
 
-/**
- * Resets the fly to the left with a random y
- */
-function resetFly() {
-  fly.x = 0;
-  fly.y = random(100, 500);
-}
-
-/**
- * Moves the ball to the mouse position on x
- */
-function guideBall() {
-  ball.body.x = mouseX;
-}
-
-/**
- * Handles moving the ball based on its state
- */
 function moveBall() {
   const groundY = height - ball.body.size / 2 - 25;
 
   if (ball.body.state === "idle") {
-    // Follow mouse X when not thrown
     ball.body.x = mouseX;
     ball.body.y = groundY;
   } else if (ball.body.state === "thrown") {
-    // Apply velocity + gravity
     ball.body.y += ball.body.vy;
     ball.body.vy += 1;
 
-    // If it goes off bottom of screen — start reload
     if (ball.body.y > height + ball.body.size) {
       ball.body.state = "reloadPause";
       ball.body.y = height + ball.body.size; // start below screen
       ball.body.reloadTimer = 35; // pause for ~35  frames
     }
   } else if (ball.body.state === "reloadPause") {
-    // Countdown before starting upward slide
     ball.body.reloadTimer--;
     ball.body.x = mouseX; // always follow mouse during pause
 
@@ -186,16 +203,17 @@ function drawBall() {
 }
 
 /**
- * Handles the ball overlapping the fly
+ * Handles the ball overlapping the Mon
  */
 function checkCatch() {
-  const d = dist(ball.body.x, ball.body.y, fly.x, fly.y);
-  if (d < ball.body.size / 2 + fly.size / 2 && ball.body.state === "thrown") {
-    // Set ball to caught state
-    ball.body.state = "caught";
-    ball.body.catchTimer = 15; // frames to pause in midair
-    spawnSparkles(fly.x, fly.y); // generate sparkles
-    resetFly(); // reset fly immediately or after sparkle?
+  for (let Mon of flies) {
+    const d = dist(ball.body.x, ball.body.y, Mon.x, Mon.y);
+    if (d < ball.body.size / 2 + Mon.size / 2 && ball.body.state === "thrown") {
+      ball.body.state = "caught";
+      ball.body.catchTimer = 20;
+      spawnSparkles(Mon.x, Mon.y);
+      Object.assign(Mon, createMon(Mon.type)); // respawn same Pokémon type
+    }
   }
 }
 
