@@ -18,12 +18,16 @@ let sparkles = [];
 let archeopsImg, pidgeotImg, emolgaImg;
 let mons = [];
 let pkClosed, pkOpen, pkThrown;
+let score = 0;
+let timer = 2;
+let lastSecond = 0;
+let pixelFont;
 
 function preload() {
   archeopsImg = loadImage("assets/archeops.webp");
   pidgeotImg = loadImage("assets/pidgeot.webp");
   emolgaImg = loadImage("assets/emolga.png");
-
+  pixelFont = loadFont("assets/PressStart2P-Regular.ttf");
   pkClosed = loadImage("assets/pkball-closed.png");
   pkOpen = loadImage("assets/pkball-open.png");
   pkThrown = loadImage("assets/pkball-thrown.gif");
@@ -46,6 +50,7 @@ const ball = {
 function setup() {
   createCanvas(1280, 1080);
   imageMode(CENTER);
+  lastSecond = millis();
 
   mons.push(createMon("archeops"));
   mons.push(createMon("pidgeot"));
@@ -53,6 +58,12 @@ function setup() {
 
   ball.body.y = height - ball.body.size / 2 - 25;
   ball.body.state = "idle";
+
+  console.log(pixelFont);
+  textFont(pixelFont);
+  textSize(32);
+  fill(255);
+  text("test", 100, 100);
 }
 
 function createMon(type) {
@@ -69,14 +80,14 @@ function createMon(type) {
       props = {
         img: pidgeotImg,
         size: random(90, 120),
-        baseSpeed: random(5, 8),
+        baseSpeed: random(6, 9),
       };
       break;
     case "emolga":
       props = {
         img: emolgaImg,
         size: random(60, 80),
-        baseSpeed: random(10, 15),
+        baseSpeed: random(12, 15),
       };
       break;
   }
@@ -103,13 +114,57 @@ function createMon(type) {
 }
 
 function draw() {
-  background("#e5d7cfff");
+  background("#e0e9efff");
   moveMon();
   drawMon();
   moveBall();
   drawBall();
   updateSparkles();
   checkCatch();
+  drawHUD();
+
+  if (millis() - lastSecond > 1000) {
+    timer--;
+    lastSecond = millis();
+  }
+
+  if (timer <= 0) {
+    timer = 0;
+  }
+
+  if (timer <= 0) {
+    timer = 0;
+    noLoop();
+    textAlign(CENTER, CENTER);
+    textSize(96);
+    stroke(0);
+    strokeWeight(8);
+    fill(205, 50, 50);
+    textFont(pixelFont);
+    text("GAME OVER", width / 2, height / 2);
+    noStroke();
+  }
+}
+
+function drawHUD() {
+  push();
+  textFont(pixelFont);
+  textSize(38);
+  noStroke();
+
+  textAlign(LEFT, TOP);
+  fill(0);
+  text(`SCORE: ${nf(score, 4)}`, 32, 32);
+  fill(235, 203, 0);
+  text(`SCORE: ${nf(score, 4)}`, 30, 30);
+
+  textAlign(RIGHT, TOP);
+  fill(0);
+  text(`TIME: ${timer}`, width - 28, 32);
+  fill(235, 203, 0);
+  text(`TIME: ${timer}`, width - 30, 30);
+
+  pop();
 }
 
 function moveMon() {
@@ -156,7 +211,7 @@ function drawMon() {
 function moveBall() {
   const groundY = height - ball.body.size / 2 - 25;
 
-  if (ball.body.state === "idle") {
+  if (ball.body.state === "idle" && timer > 0) {
     ball.body.x = mouseX;
     ball.body.y = groundY;
   } else if (ball.body.state === "thrown") {
@@ -224,6 +279,8 @@ function drawBall() {
  * Handles the ball overlapping the Mon
  */
 function checkCatch() {
+  //Add score based on Pokémon type
+
   if (ball.body.state !== "thrown" || ball.body.hasCaught) return;
 
   for (let Mon of mons) {
@@ -232,6 +289,10 @@ function checkCatch() {
       ball.body.state = "caught";
       ball.body.catchTimer = 30;
       ball.body.hasCaught = true;
+
+      if (Mon.type === "archeops") score += 25;
+      else if (Mon.type === "pidgeot") score += 50;
+      else if (Mon.type === "emolga") score += 100;
 
       Mon.capturing = true;
       Mon.targetX = ball.body.x;
@@ -247,6 +308,7 @@ function checkCatch() {
  * Launch the ball on click (if it's not launched yet)
  */
 function mousePressed() {
+  if (timer <= 0) return;
   if (ball.body.state === "idle") {
     ball.body.state = "thrown";
     ball.body.vy = -42;
