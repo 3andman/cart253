@@ -17,18 +17,25 @@
 let sparkles = [];
 let archeopsImg, pidgeotImg, emolgaImg;
 let flies = [];
+let pkClosed, pkOpen, pkThrown;
 
 function preload() {
   archeopsImg = loadImage("assets/archeops.webp");
   pidgeotImg = loadImage("assets/pidgeot.webp");
   emolgaImg = loadImage("assets/emolga.png");
+
+  pkClosed = loadImage("assets/pkball-closed.png");
+  pkOpen = loadImage("assets/pkball-open.png");
+  pkThrown = loadImage("assets/pkball-thrown.gif");
 }
 
 const ball = {
   body: {
     x: 320,
     y: 0,
+    vy: 0,
     size: 80,
+    state: "idle",
   },
 };
 
@@ -36,7 +43,7 @@ const ball = {
  
  */
 function setup() {
-  createCanvas(720, 1080);
+  createCanvas(1280, 1080);
   imageMode(CENTER);
 
   flies.push(createMon("archeops"));
@@ -55,39 +62,40 @@ function createMon(type) {
         img: archeopsImg,
         size: random(120, 150),
         baseSpeed: random(2, 4),
-        rotationSpeed: random(-0.02, 0.02),
       };
       break;
     case "pidgeot":
       props = {
         img: pidgeotImg,
         size: random(90, 120),
-        baseSpeed: random(4, 6),
-        rotationSpeed: random(-0.04, 0.04),
+        baseSpeed: random(5, 8),
       };
       break;
     case "emolga":
       props = {
         img: emolgaImg,
         size: random(60, 80),
-        baseSpeed: random(6, 8),
-        rotationSpeed: random(-0.08, 0.08),
+        baseSpeed: random(10, 15),
       };
       break;
   }
-
+  const movingRight = random() < 0.5;
   const angle = random(-PI / 4, PI / 4);
   const speed = props.baseSpeed;
+
+  const startX = movingRight ? -props.size : width + props.size;
+  const vx = cos(angle) * speed * (movingRight ? 1 : -1);
+  const vy = sin(angle) * speed;
+
   return {
     type,
     img: props.img,
-    x: random(width),
+    x: startX,
     y: random(100, 400),
-    vx: cos(angle) * speed * (random() < 0.5 ? -1 : 1),
-    vy: sin(angle) * speed,
+    vx,
+    vy,
     size: props.size,
-    rotation: random(TWO_PI),
-    rotationSpeed: props.rotationSpeed,
+    rotation: sin(frameCount * 0.1) * 0.3,
   };
 }
 
@@ -105,7 +113,7 @@ function moveMon() {
   for (let Mon of flies) {
     Mon.x += Mon.vx;
     Mon.y += Mon.vy;
-    Mon.rotation += Mon.rotationSpeed;
+    Mon.rotation = sin(frameCount * 0.1 + Mon.x * 0.02) * 0.3;
 
     Mon.y += sin(frameCount * 0.05 + Mon.x * 0.01) * 0.8;
 
@@ -164,12 +172,17 @@ function moveBall() {
       ball.body.vy = 0;
     }
   } else if (ball.body.state === "caught") {
-    // Pause in midair
-    ball.body.catchTimer--;
+    ball.body.catchTimer--; // countdown while open
+
+    // ⬇️ Added: trigger sparkle near end of open animation
+    if (ball.body.catchTimer === 10) {
+      spawnSparkles(ball.body.x, ball.body.y);
+    }
+
+    // ⬇️ Added: after timer ends, drop ball again
     if (ball.body.catchTimer <= 0) {
-      // Start falling offscreen after pause
-      ball.body.state = "thrown";
-      ball.body.vy = 5; // small downward start
+      ball.body.state = "thrown"; // fall with gravity
+      ball.body.vy = 5;
     }
   }
 }
@@ -180,25 +193,16 @@ function moveBall() {
 function drawBall() {
   push();
   translate(ball.body.x, ball.body.y);
+  imageMode(CENTER);
 
-  // Top half (red)
-  noStroke();
-  fill("#dd3434ff");
-  arc(0, 0, ball.body.size, ball.body.size, PI, 0, CHORD);
+  if (ball.body.state === "thrown") {
+    image(pkThrown, 0, 0, ball.body.size, ball.body.size);
+  } else if (ball.body.state === "caught") {
+    image(pkOpen, 0, 0, ball.body.size, ball.body.size);
+  } else {
+    image(pkClosed, 0, 0, ball.body.size, ball.body.size);
+  }
 
-  // Bottom half (white)
-  fill("#e9e9e9ff");
-  arc(0, 0, ball.body.size, ball.body.size, 0, PI, CHORD);
-
-  // Black band
-  stroke("#000000");
-  strokeWeight(8);
-  line(-ball.body.size / 2, 0, ball.body.size / 2, 0);
-
-  // Center button
-  noStroke();
-  fill("#cbcbcbff");
-  ellipse(0, 0, ball.body.size / 4.5);
   pop();
 }
 
@@ -211,7 +215,6 @@ function checkCatch() {
     if (d < ball.body.size / 2 + Mon.size / 2 && ball.body.state === "thrown") {
       ball.body.state = "caught";
       ball.body.catchTimer = 20;
-      spawnSparkles(Mon.x, Mon.y);
       Object.assign(Mon, createMon(Mon.type)); // respawn same Pokémon type
     }
   }
