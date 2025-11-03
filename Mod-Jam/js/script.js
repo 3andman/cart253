@@ -2,12 +2,12 @@
  * Frogfrogfrog
  * Pippin Barr
  *
- * A game of catching flies with your frog-tongue
+ * A game of catching mons with your frog-tongue
  *
  * Instructions:
  * - Move the frog with your mouse
  * - Click to launch the tongue
- * - Catch flies
+ * - Catch mons
  *
  * Made with p5
  * https://p5js.org/
@@ -16,7 +16,7 @@
 "use strict";
 let sparkles = [];
 let archeopsImg, pidgeotImg, emolgaImg;
-let flies = [];
+let mons = [];
 let pkClosed, pkOpen, pkThrown;
 
 function preload() {
@@ -36,6 +36,7 @@ const ball = {
     vy: 0,
     size: 80,
     state: "idle",
+    hasCaught: false,
   },
 };
 
@@ -46,9 +47,9 @@ function setup() {
   createCanvas(1280, 1080);
   imageMode(CENTER);
 
-  flies.push(createMon("archeops"));
-  flies.push(createMon("pidgeot"));
-  flies.push(createMon("emolga"));
+  mons.push(createMon("archeops"));
+  mons.push(createMon("pidgeot"));
+  mons.push(createMon("emolga"));
 
   ball.body.y = height - ball.body.size / 2 - 25;
   ball.body.state = "idle";
@@ -96,6 +97,8 @@ function createMon(type) {
     vy,
     size: props.size,
     rotation: sin(frameCount * 0.1) * 0.3,
+    capturing: false,
+    captureScale: 1,
   };
 }
 
@@ -110,11 +113,22 @@ function draw() {
 }
 
 function moveMon() {
-  for (let Mon of flies) {
+  for (let Mon of mons) {
+    if (Mon.capturing) {
+      Mon.x = lerp(Mon.x, Mon.targetX, 0.1);
+      Mon.y = lerp(Mon.y, Mon.targetY, 0.1);
+      Mon.size *= 0.97;
+
+      if (Mon.size < 60) {
+        Mon.capturing = false;
+        Object.assign(Mon, createMon(Mon.type)); // respawn
+      }
+      continue;
+    }
+
     Mon.x += Mon.vx;
     Mon.y += Mon.vy;
     Mon.rotation = sin(frameCount * 0.1 + Mon.x * 0.02) * 0.3;
-
     Mon.y += sin(frameCount * 0.05 + Mon.x * 0.01) * 0.8;
 
     if (
@@ -129,10 +143,11 @@ function moveMon() {
 }
 
 function drawMon() {
-  for (let Mon of flies) {
+  for (let Mon of mons) {
     push();
     translate(Mon.x, Mon.y);
     rotate(Mon.rotation);
+    scale(Mon.captureScale);
     image(Mon.img, 0, 0, Mon.size, Mon.size);
     pop();
   }
@@ -170,16 +185,15 @@ function moveBall() {
       ball.body.y = groundY;
       ball.body.state = "idle";
       ball.body.vy = 0;
+      ball.body.hasCaught = false;
     }
   } else if (ball.body.state === "caught") {
     ball.body.catchTimer--; // countdown while open
 
-    // ⬇️ Added: trigger sparkle near end of open animation
-    if (ball.body.catchTimer === 10) {
+    if (ball.body.catchTimer === 3) {
       spawnSparkles(ball.body.x, ball.body.y);
     }
 
-    // ⬇️ Added: after timer ends, drop ball again
     if (ball.body.catchTimer <= 0) {
       ball.body.state = "thrown"; // fall with gravity
       ball.body.vy = 5;
@@ -198,9 +212,9 @@ function drawBall() {
   if (ball.body.state === "thrown") {
     image(pkThrown, 0, 0, ball.body.size, ball.body.size);
   } else if (ball.body.state === "caught") {
-    image(pkOpen, 0, 0, ball.body.size, ball.body.size);
+    image(pkOpen, 0, 0, ball.body.size * 1.7, ball.body.size * 1.2);
   } else {
-    image(pkClosed, 0, 0, ball.body.size, ball.body.size);
+    image(pkClosed, 0, 0, ball.body.size * 1.25, ball.body.size * 1.25);
   }
 
   pop();
@@ -210,12 +224,21 @@ function drawBall() {
  * Handles the ball overlapping the Mon
  */
 function checkCatch() {
-  for (let Mon of flies) {
+  if (ball.body.state !== "thrown" || ball.body.hasCaught) return;
+
+  for (let Mon of mons) {
     const d = dist(ball.body.x, ball.body.y, Mon.x, Mon.y);
-    if (d < ball.body.size / 2 + Mon.size / 2 && ball.body.state === "thrown") {
+    if (d < ball.body.size / 2 + Mon.size / 2) {
       ball.body.state = "caught";
-      ball.body.catchTimer = 20;
-      Object.assign(Mon, createMon(Mon.type)); // respawn same Pokémon type
+      ball.body.catchTimer = 30;
+      ball.body.hasCaught = true;
+
+      Mon.capturing = true;
+      Mon.targetX = ball.body.x;
+      Mon.targetY = ball.body.y;
+      Mon.captureScale = 1;
+
+      break;
     }
   }
 }
