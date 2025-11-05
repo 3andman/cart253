@@ -19,9 +19,12 @@ let archeopsImg, pidgeotImg, emolgaImg;
 let mons = [];
 let pkClosed, pkOpen, pkThrown;
 let score = 0;
-let timer = 2;
+let timer = 30;
 let lastSecond = 0;
 let pixelFont;
+let gameOver = false;
+let gameStart = true;
+let scapeImg = [];
 
 function preload() {
   archeopsImg = loadImage("assets/archeops.webp");
@@ -31,6 +34,7 @@ function preload() {
   pkClosed = loadImage("assets/pkball-closed.png");
   pkOpen = loadImage("assets/pkball-open.png");
   pkThrown = loadImage("assets/pkball-thrown.gif");
+  scapeImg = loadImage("assets/landscape.jpg");
 }
 
 const ball = {
@@ -72,21 +76,21 @@ function createMon(type) {
     case "archeops":
       props = {
         img: archeopsImg,
-        size: random(120, 150),
+        size: random(150, 180),
         baseSpeed: random(2, 4),
       };
       break;
     case "pidgeot":
       props = {
         img: pidgeotImg,
-        size: random(90, 120),
+        size: random(100, 140),
         baseSpeed: random(6, 9),
       };
       break;
     case "emolga":
       props = {
         img: emolgaImg,
-        size: random(60, 80),
+        size: random(60, 90),
         baseSpeed: random(12, 15),
       };
       break;
@@ -103,10 +107,11 @@ function createMon(type) {
     type,
     img: props.img,
     x: startX,
-    y: random(100, 400),
+    y: random(50, height * 0.8),
     vx,
     vy,
     size: props.size,
+    coreRadius: props.size * 0.75,
     rotation: sin(frameCount * 0.1) * 0.3,
     capturing: false,
     captureScale: 1,
@@ -114,7 +119,23 @@ function createMon(type) {
 }
 
 function draw() {
-  background("#e0e9efff");
+  if (gameStart) {
+    background("#e3dfd3ff");
+    textAlign(CENTER, CENTER);
+    textFont(pixelFont);
+    textSize(96);
+    stroke(0);
+    strokeWeight(8);
+    fill(235, 205, 0);
+    text("POKÉ HUNT", width / 2, height / 2 - 100);
+    drawStartButton();
+    return;
+  }
+
+  clear();
+  imageMode(CORNER);
+  image(scapeImg, 0, 0, width, height);
+
   moveMon();
   drawMon();
   moveBall();
@@ -132,17 +153,27 @@ function draw() {
     timer = 0;
   }
 
-  if (timer <= 0) {
+  if (timer <= 0 && !gameOver) {
     timer = 0;
+    gameOver = true;
     noLoop();
+
+    background(0);
+
     textAlign(CENTER, CENTER);
+    textFont(pixelFont);
     textSize(96);
     stroke(0);
     strokeWeight(8);
-    fill(205, 50, 50);
-    textFont(pixelFont);
-    text("GAME OVER", width / 2, height / 2);
+    fill(255, 0, 0);
+    text("GAME OVER", width / 2, height / 2 - 100);
+
+    textSize(40);
+    fill(235, 205, 0);
     noStroke();
+    text(`SCORE: ${nf(score, 4)}`, width / 2, height / 2);
+
+    drawTryAgainButton();
   }
 }
 
@@ -170,13 +201,14 @@ function drawHUD() {
 function moveMon() {
   for (let Mon of mons) {
     if (Mon.capturing) {
-      Mon.x = lerp(Mon.x, Mon.targetX, 0.1);
-      Mon.y = lerp(Mon.y, Mon.targetY, 0.1);
-      Mon.size *= 0.97;
+      Mon.x = lerp(Mon.x, Mon.targetX, 0.15);
+      Mon.y = lerp(Mon.y, Mon.targetY, 0.15);
 
-      if (Mon.size < 60) {
+      Mon.size *= 0.9;
+
+      if (Mon.size < 10) {
         Mon.capturing = false;
-        Object.assign(Mon, createMon(Mon.type)); // respawn
+        Object.assign(Mon, createMon(Mon.type));
       }
       continue;
     }
@@ -186,6 +218,7 @@ function moveMon() {
     Mon.rotation = sin(frameCount * 0.1 + Mon.x * 0.02) * 0.3;
     Mon.y += sin(frameCount * 0.05 + Mon.x * 0.01) * 0.8;
 
+    Mon.y = constrain(Mon.y, 0, height * 0.7);
     if (
       Mon.x > width + Mon.size ||
       Mon.x < -Mon.size ||
@@ -285,7 +318,7 @@ function checkCatch() {
 
   for (let Mon of mons) {
     const d = dist(ball.body.x, ball.body.y, Mon.x, Mon.y);
-    if (d < ball.body.size / 2 + Mon.size / 2) {
+    if (d < ball.body.size / 2 + Mon.coreRadius) {
       ball.body.state = "caught";
       ball.body.catchTimer = 30;
       ball.body.hasCaught = true;
@@ -308,6 +341,43 @@ function checkCatch() {
  * Launch the ball on click (if it's not launched yet)
  */
 function mousePressed() {
+  if (gameStart) {
+    const btnX = width / 2;
+    const btnY = height / 2 + 100;
+    const btnW = 500;
+    const btnH = 120;
+
+    if (
+      mouseX > btnX - btnW / 2 &&
+      mouseX < btnX + btnW / 2 &&
+      mouseY > btnY - btnH / 2 &&
+      mouseY < btnY + btnH / 2
+    ) {
+      gameStart = false;
+      score = 0;
+      timer = 30;
+      lastSecond = millis();
+      gameOver = false;
+    }
+    return;
+  }
+
+  if (gameOver) {
+    const btnX = width / 2;
+    const btnY = height / 2 + 100;
+    const btnW = 500;
+    const btnH = 120;
+
+    if (
+      mouseX > btnX - btnW / 2 &&
+      mouseX < btnX + btnW / 2 &&
+      mouseY > btnY - btnH / 2 &&
+      mouseY < btnY + btnH / 2
+    ) {
+      restartGame();
+    }
+    return;
+  }
   if (timer <= 0) return;
   if (ball.body.state === "idle") {
     ball.body.state = "thrown";
@@ -341,4 +411,69 @@ function updateSparkles() {
     ellipse(s.x, s.y, s.size);
     if (s.alpha <= 0) sparkles.splice(i, 1);
   }
+}
+
+function drawTryAgainButton() {
+  push();
+  rectMode(CENTER);
+  textAlign(CENTER, CENTER);
+  textFont(pixelFont);
+  textSize(48);
+
+  const btnX = width / 2;
+  const btnY = height / 2 + 100;
+  const btnW = 500;
+  const btnH = 120;
+
+  fill(255);
+  stroke(0);
+  strokeWeight(4);
+  rect(btnX, btnY, btnW, btnH, 10);
+
+  noStroke();
+  fill(0);
+  text("TRY AGAIN?", width / 2, height / 2 + 100);
+  pop();
+}
+
+function drawStartButton() {
+  push();
+  rectMode(CENTER);
+  textAlign(CENTER, CENTER);
+  textFont(pixelFont);
+  textSize(48);
+
+  const btnX = width / 2;
+  const btnY = height / 2 + 100;
+  const btnW = 500;
+  const btnH = 120;
+
+  fill(255);
+  stroke(0);
+  strokeWeight(4);
+  rect(btnX, btnY, btnW, btnH, 10);
+
+  noStroke();
+  fill(0);
+  text("START", width / 2, height / 2 + 100);
+  pop();
+}
+
+function restartGame() {
+  score = 0;
+  timer = 60;
+  lastSecond = millis();
+  gameOver = false;
+  loop();
+
+  // reset ball
+  ball.body.state = "idle";
+  ball.body.hasCaught = false;
+  ball.body.y = height - ball.body.size / 2 - 25;
+
+  // reset mons
+  mons = [];
+  mons.push(createMon("archeops"));
+  mons.push(createMon("pidgeot"));
+  mons.push(createMon("emolga"));
 }
