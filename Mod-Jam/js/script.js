@@ -1,13 +1,13 @@
 /**
- * Frogfrogfrog
- * Pippin Barr
+ * Poké-Hunt
+ * Dylan Samaan
  *
  * A game of catching mons with your frog-tongue
  *
  * Instructions:
- * - Move the frog with your mouse
- * - Click to launch the tongue
- * - Catch mons
+ * - Move the Ball with your mouse
+ * - Click to launch the Ball
+ * - Catch Mons
  *
  * Made with p5
  * https://p5js.org/
