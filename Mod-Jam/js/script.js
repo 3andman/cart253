@@ -25,6 +25,8 @@ let pixelFont;
 let gameOver = false;
 let gameStart = true;
 let scapeImg = [];
+let track = [];
+let oversnd = [];
 
 function preload() {
   archeopsImg = loadImage("assets/archeops.webp");
@@ -35,6 +37,8 @@ function preload() {
   pkOpen = loadImage("assets/pkball-open.png");
   pkThrown = loadImage("assets/pkball-thrown.gif");
   scapeImg = loadImage("assets/landscape.jpg");
+  track = loadSound("assets/BW2Track.mp3");
+  oversnd = loadSound("assets/gameover.wav");
 }
 
 const ball = {
@@ -53,6 +57,9 @@ const ball = {
  */
 function setup() {
   createCanvas(1280, 1080);
+  track.play();
+  track.loop();
+  track.setVolume(0.3);
   imageMode(CENTER);
   lastSecond = millis();
 
@@ -158,6 +165,10 @@ function draw() {
     gameOver = true;
     noLoop();
 
+    track.stop();
+    oversnd.play();
+    oversnd.setVolume(0.5);
+
     background(0);
 
     textAlign(CENTER, CENTER);
@@ -245,7 +256,11 @@ function moveBall() {
   const groundY = height - ball.body.size / 2 - 25;
 
   if (ball.body.state === "idle" && timer > 0) {
-    ball.body.x = mouseX;
+    ball.body.x = constrain(
+      mouseX,
+      ball.body.size / 2,
+      width - ball.body.size / 2
+    );
     ball.body.y = groundY;
   } else if (ball.body.state === "thrown") {
     ball.body.y += ball.body.vy;
@@ -461,7 +476,7 @@ function drawStartButton() {
 
 function restartGame() {
   score = 0;
-  timer = 60;
+  timer = 30;
   lastSecond = millis();
   gameOver = false;
   loop();
@@ -476,4 +491,9 @@ function restartGame() {
   mons.push(createMon("archeops"));
   mons.push(createMon("pidgeot"));
   mons.push(createMon("emolga"));
+
+  track.stop();
+  track.play();
+  track.loop();
+  track.setVolume(0.3);
 }
