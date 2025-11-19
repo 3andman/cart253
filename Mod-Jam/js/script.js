@@ -27,6 +27,8 @@ let gameStart = true;
 let scapeImg = [];
 let track = [];
 let oversnd = [];
+let catchsnd = [];
+let throwsnd = [];
 
 function preload() {
   archeopsImg = loadImage("assets/archeops.webp");
@@ -39,6 +41,8 @@ function preload() {
   scapeImg = loadImage("assets/landscape.jpg");
   track = loadSound("assets/BW2Track.mp3");
   oversnd = loadSound("assets/gameover.wav");
+  catchsnd = loadSound("assets/pkcatch.mp3");
+  throwsnd = loadSound("assets/pkthrow.mp3");
 }
 
 const ball = {
@@ -60,6 +64,8 @@ function setup() {
   track.play();
   track.loop();
   track.setVolume(0.3);
+  throwsnd.setVolume(0.5);
+  oversnd.setVolume(0.5);
   imageMode(CENTER);
   lastSecond = millis();
 
@@ -167,7 +173,6 @@ function draw() {
 
     track.stop();
     oversnd.play();
-    oversnd.setVolume(0.5);
 
     background(0);
 
@@ -264,7 +269,7 @@ function moveBall() {
     ball.body.y = groundY;
   } else if (ball.body.state === "thrown") {
     ball.body.y += ball.body.vy;
-    ball.body.vy += 1;
+    ball.body.vy += 0.93;
 
     if (ball.body.y > height + ball.body.size) {
       ball.body.state = "reloadPause";
@@ -338,6 +343,12 @@ function checkCatch() {
       ball.body.catchTimer = 30;
       ball.body.hasCaught = true;
 
+      if (!catchsnd.isPlaying()) {
+        setTimeout(() => {
+          catchsnd.play();
+        }, 50);
+      }
+
       if (Mon.type === "archeops") score += 25;
       else if (Mon.type === "pidgeot") score += 50;
       else if (Mon.type === "emolga") score += 100;
@@ -397,6 +408,7 @@ function mousePressed() {
   if (ball.body.state === "idle") {
     ball.body.state = "thrown";
     ball.body.vy = -42;
+    throwsnd.play();
   }
 }
 
