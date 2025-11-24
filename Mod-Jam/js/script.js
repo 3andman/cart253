@@ -29,6 +29,7 @@ let track = [];
 let oversnd = [];
 let catchsnd = [];
 let throwsnd = [];
+let isPaused = false;
 
 function preload() {
   archeopsImg = loadImage("assets/archeops.webp");
@@ -61,8 +62,6 @@ const ball = {
  */
 function setup() {
   createCanvas(1280, 1080);
-  track.play();
-  track.loop();
   track.setVolume(0.3);
   throwsnd.setVolume(0.5);
   oversnd.setVolume(0.5);
@@ -149,47 +148,64 @@ function draw() {
   imageMode(CORNER);
   image(scapeImg, 0, 0, width, height);
 
-  moveMon();
+  if (!isPaused && !gameOver) {
+    drawMon();
+    drawBall();
+    updateSparkles();
+    moveMon();
+    moveBall();
+    checkCatch();
+
+    if (millis() - lastSecond > 1000) {
+      timer--;
+      lastSecond = millis();
+    }
+
+    if (timer <= 0) {
+      timer = 0;
+      gameOver = true;
+      noLoop();
+
+      track.stop();
+      oversnd.play();
+
+      background(0);
+
+      textAlign(CENTER, CENTER);
+      textFont(pixelFont);
+      textSize(96);
+      stroke(0);
+      strokeWeight(8);
+      fill(255, 0, 0);
+      text("GAME OVER", width / 2, height / 2 - 100);
+
+      textSize(40);
+      fill(235, 205, 0);
+      noStroke();
+      text(`SCORE: ${nf(score, 4)}`, width / 2, height / 2);
+
+      drawTryAgainButton();
+      return; // stop draw() here on game over
+    }
+  }
+
   drawMon();
-  moveBall();
   drawBall();
-  updateSparkles();
-  checkCatch();
   drawHUD();
+  drawPauseIcon();
 
-  if (millis() - lastSecond > 1000) {
-    timer--;
-    lastSecond = millis();
-  }
-
-  if (timer <= 0) {
-    timer = 0;
-  }
-
-  if (timer <= 0 && !gameOver) {
-    timer = 0;
-    gameOver = true;
-    noLoop();
-
-    track.stop();
-    oversnd.play();
-
-    background(0);
-
+  if (isPaused && !gameOver) {
+    push();
+    rectMode(CENTER);
+    noStroke();
+    fill(0, 0, 0, 140);
+    rect(width / 2, height / 2, 500, 150, 20);
     textAlign(CENTER, CENTER);
     textFont(pixelFont);
-    textSize(96);
-    stroke(0);
-    strokeWeight(8);
-    fill(255, 0, 0);
-    text("GAME OVER", width / 2, height / 2 - 100);
-
-    textSize(40);
-    fill(235, 205, 0);
-    noStroke();
-    text(`SCORE: ${nf(score, 4)}`, width / 2, height / 2);
-
-    drawTryAgainButton();
+    textSize(48);
+    fill(255, 255, 0);
+    text("PAUSED", width / 2, height / 2);
+    pop();
   }
 }
 
@@ -367,6 +383,29 @@ function checkCatch() {
  * Launch the ball on click (if it's not launched yet)
  */
 function mousePressed() {
+  const pauseX = width - 110;
+  const pauseY = 50;
+  const pauseW = 180;
+  const pauseH = 50;
+
+  const iconX = width - 140;
+  const iconY = 50;
+  const iconSize = 36;
+
+  if (
+    !gameStart &&
+    !gameOver &&
+    mouseX > iconX - iconSize / 2 &&
+    mouseX < iconX + iconSize / 2 &&
+    mouseY > iconY - iconSize / 2 &&
+    mouseY < iconY + iconSize / 2
+  ) {
+    isPaused = !isPaused;
+    return;
+  }
+
+  if (isPaused) return;
+
   if (gameStart) {
     const btnX = width / 2;
     const btnY = height / 2 + 100;
@@ -384,6 +423,13 @@ function mousePressed() {
       timer = 30;
       lastSecond = millis();
       gameOver = false;
+
+      if (!track.isPlaying()) {
+        if (typeof userStartAudio === "function") {
+          userStartAudio();
+        }
+        track.loop();
+      }
     }
     return;
   }
@@ -401,6 +447,7 @@ function mousePressed() {
       mouseY < btnY + btnH / 2
     ) {
       restartGame();
+      isPaused = false;
     }
     return;
   }
@@ -508,4 +555,30 @@ function restartGame() {
   track.play();
   track.loop();
   track.setVolume(0.3);
+}
+
+function drawPauseIcon() {
+  if (gameStart || gameOver) return;
+
+  const iconX = width - 140;
+  const iconY = 50;
+  const iconSize = 36;
+
+  push();
+  rectMode(CENTER);
+  noStroke();
+
+  fill(255, 255, 255, 200);
+  rect(iconX, iconY, iconSize, iconSize, 6);
+
+  fill(0);
+  if (!isPaused) {
+    const barW = 4;
+    const barH = 14;
+    rect(iconX - 4, iconY, barW, barH);
+    rect(iconX + 4, iconY, barW, barH);
+  } else {
+    triangle(iconX - 5, iconY - 8, iconX - 5, iconY + 8, iconX + 6, iconY);
+  }
+  pop();
 }
