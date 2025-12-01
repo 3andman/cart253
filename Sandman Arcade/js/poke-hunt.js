@@ -57,11 +57,20 @@ const ball = {
   },
 };
 
-/**
- 
- */
 function setup() {
-  createCanvas(1280, 1080);
+  const aspect = 1280 / 1080; //aspect ratio
+
+  //full height of the window
+  let targetHeight = windowHeight;
+  let targetWidth = targetHeight * aspect;
+
+  if (targetWidth > windowWidth) {
+    targetWidth = windowWidth;
+    targetHeight = targetWidth / aspect;
+  }
+
+  createCanvas(targetWidth, targetHeight);
+
   track.setVolume(0.3);
   throwsnd.setVolume(0.5);
   oversnd.setVolume(0.5);
@@ -128,6 +137,20 @@ function createMon(type) {
     capturing: false,
     captureScale: 1,
   };
+}
+
+function windowResized() {
+  const aspect = 1280 / 1080;
+
+  let targetHeight = windowHeight;
+  let targetWidth = targetHeight * aspect;
+
+  if (targetWidth > windowWidth) {
+    targetWidth = windowWidth;
+    targetHeight = targetWidth / aspect;
+  }
+
+  resizeCanvas(targetWidth, targetHeight);
 }
 
 function draw() {
@@ -383,11 +406,6 @@ function checkCatch() {
  * Launch the ball on click (if it's not launched yet)
  */
 function mousePressed() {
-  const pauseX = width - 110;
-  const pauseY = 50;
-  const pauseW = 180;
-  const pauseH = 50;
-
   const iconX = width - 140;
   const iconY = 50;
   const iconSize = 36;
