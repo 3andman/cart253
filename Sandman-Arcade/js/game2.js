@@ -12,9 +12,10 @@
 let bgImg;
 let birdImg;
 
-//Game State
+//Game States
 let gameStart = true;
 let gameOver = false;
+
 let score = 0;
 
 //Background Scrolling
@@ -28,6 +29,7 @@ const bird = {
   vy: 0,
   size: 80,
 };
+
 //Physics
 const gravity = 0.6;
 constjumpStrenght = -10;
@@ -40,4 +42,30 @@ function preload() {
 
 function setup() {
   const aspect = 1280 / 1080;
+
+  //tries to use full window height
+  let targetHeight = windowHeight;
+  let targetWidh = targetHeight * aspect;
+
+  //adjust
+  if (targetWidth > windowWidth) {
+    targetWidth = windowWidth;
+    targetHeight = targetWidth / aspect;
+  }
+
+  //draws sized canvas and centers image
+  createCanvas(targetWidth, targetHeight);
+  imageMode(CENTER);
+
+  textFont("Press Start 2P");
+
+  //place bird on left side
+  bird.x = width * 0.3;
+  bird.y = height * 0.5;
+  bird.vy = 0;
+
+  //core game stats
+  score = 0;
+  gameStart = true;
+  gameOver = false;
 }

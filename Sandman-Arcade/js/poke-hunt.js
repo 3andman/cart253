@@ -246,9 +246,9 @@ function drawHUD() {
 
   textAlign(RIGHT, TOP);
   fill(0);
-  text(`TIME: ${timer}`, width - 28, 32);
+  text(`TIME: ${timer}`, width - 58, 32);
   fill(235, 203, 0);
-  text(`TIME: ${timer}`, width - 30, 30);
+  text(`TIME: ${timer}`, width - 60, 30);
 
   pop();
 }
@@ -578,7 +578,7 @@ function restartGame() {
 function drawPauseIcon() {
   if (gameStart || gameOver) return;
 
-  const iconX = width - 140;
+  const iconX = width - 30;
   const iconY = 50;
   const iconSize = 36;
 
