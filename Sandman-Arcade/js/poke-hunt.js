@@ -39,7 +39,7 @@ function preload() {
   pkClosed = loadImage("assets/pkhunt/pkball-closed.png");
   pkOpen = loadImage("assets/pkhunt/pkball-open.png");
   pkThrown = loadImage("assets/pkhunt/pkball-thrown.gif");
-  scapeImg = loadImage("assets/pkhunt/landscape.jpg");
+  scapeImg = loadImage("assets/pkhunt/landscape.png");
   track = loadSound("assets/pkhunt/BW2Track.mp3");
   oversnd = loadSound("assets/pkhunt/gameover.wav");
   catchsnd = loadSound("assets/pkhunt/pkcatch.mp3");
@@ -83,12 +83,6 @@ function setup() {
 
   ball.body.y = height - ball.body.size / 2 - 25;
   ball.body.state = "idle";
-
-  console.log(pixelFont);
-  textFont(pixelFont);
-  textSize(32);
-  fill(255);
-  text("test", 100, 100);
 }
 
 function createMon(type) {
@@ -155,13 +149,13 @@ function windowResized() {
 
 function draw() {
   if (gameStart) {
-    background("#e3dfd3ff");
+    background(213, 214, 183);
     textAlign(CENTER, CENTER);
     textFont(pixelFont);
     textSize(96);
     stroke(0);
     strokeWeight(8);
-    fill(235, 205, 0);
+    fill(255);
     text("POKÉ HUNT", width / 2, height / 2 - 100);
     drawStartButton();
     return;
@@ -308,7 +302,7 @@ function moveBall() {
     ball.body.y = groundY;
   } else if (ball.body.state === "thrown") {
     ball.body.y += ball.body.vy;
-    ball.body.vy += 0.93;
+    ball.body.vy += 0.93 * (1080 / height);
 
     if (ball.body.y > height + ball.body.size) {
       ball.body.state = "reloadPause";
@@ -324,7 +318,7 @@ function moveBall() {
     }
   } else if (ball.body.state === "reloading") {
     // Slide upward smoothly
-    ball.body.y -= 10;
+    ball.body.y -= 10 * (1080 / height);
     ball.body.x = mouseX; // follow mouse during reload
 
     if (ball.body.y <= groundY) {
@@ -343,7 +337,7 @@ function moveBall() {
 
     if (ball.body.catchTimer <= 0) {
       ball.body.state = "thrown"; // fall with gravity
-      ball.body.vy = 5;
+      ball.body.vy = 5 * (1080 / height);
     }
   }
 }
@@ -472,7 +466,7 @@ function mousePressed() {
   if (timer <= 0) return;
   if (ball.body.state === "idle") {
     ball.body.state = "thrown";
-    ball.body.vy = -42;
+    ball.body.vy = -50 * (1080 / height);
     throwsnd.play();
   }
 }

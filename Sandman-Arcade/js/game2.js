@@ -15,29 +15,46 @@ let birdImg;
 //Game States
 let gameStart = true;
 let gameOver = false;
-
 let score = 0;
 
 //Background Scrolling
 let bgX = 0;
-let bgSpeed = 3;
+let bgSpeed = 5;
+
+let pixelFont;
 
 //Bird
 const bird = {
   x: 0,
   y: 0,
   vy: 0,
-  size: 120,
+  size: 150,
 };
 
+let gameOverTime = 0; //time of when screen appears
+const restartDelay = 1000; // 3 second interval
+
+//Pipes
+let pipes = [];
+let pipeInterval = (1000, 200); //frames between pipe spawns
+let frameCountSinceLastPipe = 0;
+let pipeTopImg;
+let pipeBottomImg;
+let bgImgSmall;
+let pipeTopImgSmall;
+let pipeBottomImgSmall;
+
 //Physics
-const gravity = 0.6;
-const jumpStrength = -10;
+const gravity = 0.5;
+const jumpStrength = -11;
 
 // LOAD ASSETS \\
 function preload() {
-  bgImg = loadImage("assets/game2/bg-loop.webp");
+  bgImg = loadImage("assets/game2/bg-loop.jpg");
   birdImg = loadImage("assets/game2/bird.png");
+  pixelFont = loadFont("assets/PressStart2P-Regular.ttf");
+  pipeTopImg = loadImage("assets/game2/pipe_top.png");
+  pipeBottomImg = loadImage("assets/game2/pipe_bottom.png");
 }
 
 function setup() {
@@ -57,7 +74,7 @@ function setup() {
   createCanvas(targetWidth, targetHeight);
   imageMode(CENTER);
 
-  textFont("Press Start 2P");
+  textFont(pixelFont);
 
   //place bird on left side
   bird.x = width * 0.3;
@@ -68,6 +85,13 @@ function setup() {
   score = 0;
   gameStart = true;
   gameOver = false;
+
+  bgImgSmall = bgImg; // optional: can scale later in draw
+  pipeTopImgSmall = pipeTopImg;
+  pipeBottomImgSmall = pipeBottomImg;
+
+  pipes.push(new Pipe()); // first pipe immediately
+  frameCountSinceLastPipe = 0;
 }
 
 // HANDLE WINDOW SIZING \\
@@ -94,15 +118,27 @@ function windowResized() {
 
 function draw() {
   //clear everything from previous frame
-  clear();
 
   //draw scrolling background first
   drawScrollingBackground();
 
-  //title screen
+  // Show start screen and stop — no physics updates or HUD
   if (gameStart) {
-    drawStartScreen();
-    drawBird();
+    // background color behind the bg (optional)
+    background(213, 214, 183);
+
+    textAlign(CENTER, CENTER);
+    textFont(pixelFont);
+
+    // Title
+    textSize(96);
+    stroke(0);
+    strokeWeight(6);
+    fill(255);
+    text("FLAPPY CRAFT", width / 2, height / 2 - 80);
+
+    // Big Start button
+    drawStartButton();
     return;
   }
 
@@ -111,32 +147,105 @@ function draw() {
     updateBird();
   }
 
+  // add new pipe every interval
+  frameCountSinceLastPipe++;
+  if (frameCountSinceLastPipe > pipeInterval) {
+    pipes.push(new Pipe());
+    frameCountSinceLastPipe = 0;
+  }
+
+  // update pipes
+  for (let i = pipes.length - 1; i >= 0; i--) {
+    pipes[i].update();
+    pipes[i].show();
+
+    // collision detection
+    if (!gameOver && pipes[i].hits(bird)) {
+      gameOver = true;
+    }
+
+    // scoring only while game is running
+    if (
+      !gameOver &&
+      !pipes[i].passed &&
+      pipes[i].x + pipes[i].w < bird.x - bird.size / 2
+    ) {
+      pipes[i].passed = true;
+      score++;
+    }
+
+    // remove offscreen pipes
+    if (pipes[i].x + pipes[i].w < 0) {
+      pipes.splice(i, 1);
+    }
+  }
+
+  if (!gameOver && !gameStart) {
+    // speed up the pipes
+    bgSpeed = min(bgSpeed + 0.004, 15); // tweak max speed
+    // adjust pipe interval so spacing stays consistent
+    const targetPipeDistance = 800; // pixels between pipes
+    pipeInterval = targetPipeDistance / bgSpeed; // interval in frames
+  }
+  imageMode(CENTER); // bird will be drawn correctly
+
   //draw bird and hud
   drawBird();
-  drawScore();
+  drawHud();
 
   //game over screen
   if (gameOver) {
-    drawGameOverScreen();
+    // record the time the game over screen appeared
+    if (gameOverTime === 0) {
+      gameOverTime = millis();
+    }
+
+    // draw background and Game Over UI
+    background(0);
+
+    // GAME OVER text
+    push();
+    textAlign(CENTER, CENTER);
+    textFont(pixelFont);
+    textSize(96);
+    stroke(0);
+    strokeWeight(8);
+    fill(255, 0, 0);
+    text("GAME OVER", width / 2, height / 2 - 100);
+    pop();
+
+    // score big and try again button
+    push();
+    textAlign(CENTER, CENTER);
+    textFont(pixelFont);
+    textSize(40);
+    noStroke();
+    fill(235, 205, 0);
+    text(`SCORE: ${nf(score, 4)}`, width / 2, height / 2);
+    pop();
+
+    drawTryAgainButton();
+
+    if (gameOverTime === 0) {
+      gameOverTime = millis();
+    }
+
+    return;
   }
 }
+
 // BACKGROUND SCROLLING \\
 
 function drawScrollingBackground() {
-  //draw two copies of the background so it scrolls better
-
-  //draw from top left for tiling
   imageMode(CORNER);
-
   const bgW = width;
   const bgH = height;
 
-  //draw imediately after eachther
   image(bgImg, bgX, 0, bgW, bgH);
   image(bgImg, bgX + bgW, 0, bgW, bgH);
+
   bgX -= bgSpeed;
 
-  //reset when first tile is offscreen to keep looping
   if (bgX <= -bgW) {
     bgX += bgW;
   }
@@ -171,65 +280,51 @@ function drawBird() {
 }
 
 // HUD/SCORE \\
-function drawScore() {
+function drawHud() {
   push();
-  textAlign(LEFT, TOP);
-  textSize(24);
-
-  //shadow
-  fill(0);
-  text(`SCORE: ${score}`, 22, 22);
-
-  //text
-  fill(255);
-  text(`SCORE: ${score}`, 20, 20);
-  pop();
-}
-
-// START SCREEN \\
-function drawStartScreen() {
-  push();
-  textAlign(CENTER, CENTER);
-
-  //title text
-  textSize(40);
-  stroke(0);
-  strokeWeight(6);
-  fill(255, 255, 0);
-  text("FLAPPY MON", width / 2, height / 2 - 80);
-
-  //instructions
+  textFont(pixelFont);
+  textSize(38);
   noStroke();
-  textSize(18);
+
+  textAlign(LEFT, TOP);
   fill(0);
-  text("CLICK TO START", width / 2, height / 2);
-  text("CLICK TO FLAP", width / 2, height / 2 + 40);
+  text(`SCORE: ${nf(score, 4)}`, 32, 32);
+  fill(235, 203, 0);
+  text(`SCORE: ${nf(score, 4)}`, 30, 30);
+
   pop();
 }
 
 // GAME OVER SCREEN \\
 function drawGameOverScreen() {
+  background(0);
+
+  // big GAME OVER text
   push();
   textAlign(CENTER, CENTER);
-
-  // game over text
-  textSize(40);
+  textFont(pixelFont);
+  textSize(96);
   stroke(0);
-  strokeWeight(6);
+  strokeWeight(8);
   fill(255, 0, 0);
-  text("GAME OVER", width / 2, height / 2 - 60);
-
-  // score and restart prompt
-  noStroke();
-  textSize(20);
-  fill(0);
-  text(`SCORE: ${score}`, width / 2, height / 2);
-  text("CLICK TO RESTART", width / 2, height / 2 + 40);
+  text("GAME OVER", width / 2, height / 2 - 100);
   pop();
+
+  // score in yellow
+  push();
+  textAlign(CENTER, CENTER);
+  textFont(pixelFont);
+  textSize(40);
+  noStroke();
+  fill(235, 205, 0);
+  text(`SCORE: ${nf(score, 4)}`, width / 2, height / 2);
+  pop();
+
+  drawTryAgainButton();
 }
 
 // INPUTS \\
-function mousePressed() {
+function keyPressed() {
   //while on start screen
   if (gameStart) {
     gameStart = false;
@@ -242,9 +337,115 @@ function mousePressed() {
 
   //after game over
   if (gameOver) {
-    setup();
+    // ignore key presses until restartDelay has passed
+    if (millis() - gameOverTime < restartDelay) {
+      return;
+    }
+
+    // reset only the game state
+    score = 0;
+    gameOver = false;
+    gameStart = false;
+    bird.y = height * 0.5;
+    bird.vy = jumpStrength;
+
+    pipes = []; // clear old pipes
+    frameCountSinceLastPipe = 0; // reset pipe timer
+
+    // reset speed
+    bgSpeed = 5;
+    pipeInterval = 400;
+
+    gameOverTime = 0; // reset timer
+    loop();
     return;
   }
 
   bird.vy = jumpStrength;
+}
+
+// DRAW START BUTTON \\
+function drawStartButton() {
+  push();
+  rectMode(CENTER);
+  textAlign(CENTER, CENTER);
+  textFont(pixelFont);
+  textSize(48);
+  // all the same as game1
+  const btnX = width / 2;
+  const btnY = height / 2 + 100;
+  const btnW = 1000;
+  const btnH = 120;
+
+  fill(255);
+  stroke(0);
+  strokeWeight(4);
+  rect(btnX, btnY, btnW, btnH, 10);
+
+  noStroke();
+  fill(0);
+  text("PRESS SPACE TO START", btnX, btnY);
+  pop();
+}
+
+// GAME OVER \\
+function drawTryAgainButton() {
+  push();
+  rectMode(CENTER);
+  textAlign(CENTER, CENTER);
+  textFont(pixelFont);
+  textSize(48);
+
+  const btnX = width / 2;
+  const btnY = height / 2 + 100;
+  const btnW = 500;
+  const btnH = 120;
+
+  fill(255);
+  stroke(0);
+  strokeWeight(4);
+  rect(btnX, btnY, btnW, btnH, 10);
+
+  noStroke();
+  fill(0);
+  text("TRY AGAIN?", btnX, btnY);
+  pop();
+}
+
+class Pipe {
+  constructor() {
+    // random vertical position for the gap
+    this.gap = (350, 450); // space for bird to pass
+    this.top = random(height * 0.1, height * 0.6); // top of gap
+    this.bottom = this.top + this.gap;
+    this.x = width; // start at the right edge
+    this.w = 180; // pipe width
+    this.passed = false; // for scoring
+  }
+
+  update() {
+    this.x -= bgSpeed; // move left
+  }
+
+  show() {
+    // draw top pipe
+    imageMode(CORNER); // use top-left coordinates for easier positioning
+    image(pipeTopImg, this.x, 0, this.w, this.top);
+
+    // draw bottom pipe
+    image(pipeBottomImg, this.x, this.bottom, this.w, height - this.bottom);
+  }
+
+  hits(bird) {
+    // check collision with bird rectangle
+    if (
+      bird.x + bird.size / 2 > this.x &&
+      bird.x - bird.size / 2 < this.x + this.w &&
+      (bird.y - bird.size / 2 < this.top ||
+        bird.y + bird.size / 2 > this.bottom)
+    ) {
+      return true;
+    }
+    return false;
+  }
 }

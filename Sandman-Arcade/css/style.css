@@ -40,6 +40,8 @@ body {
   background: #0000;
   border-radius: 6px;
   padding: 10px;
+  
+    overflow: visible;
 }
 .arcade-title {
   color: #ffffff;
@@ -105,4 +107,18 @@ canvas {
   display: inline-block;
   z-index: 10;
   /* keep it above the canvas */
+}
+
+.screen canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+canvas.fullscreen {
+  position: fixed !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 1 !important;
 }
