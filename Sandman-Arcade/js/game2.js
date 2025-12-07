@@ -29,6 +29,7 @@ const bird = {
   y: 0,
   vy: 0,
   size: 150,
+  hitScale: 0.25,
 };
 
 let gameOverTime = 0; //time of when screen appears
@@ -43,6 +44,7 @@ let pipeBottomImg;
 let bgImgSmall;
 let pipeTopImgSmall;
 let pipeBottomImgSmall;
+let gameOverSound;
 
 //Physics
 const gravity = 0.5;
@@ -55,6 +57,7 @@ function preload() {
   pixelFont = loadFont("assets/PressStart2P-Regular.ttf");
   pipeTopImg = loadImage("assets/game2/pipe_top.png");
   pipeBottomImg = loadImage("assets/game2/pipe_bottom.png");
+  gameOverSound = loadSound("assets/game2/gameover.wav");
 }
 
 function setup() {
@@ -86,7 +89,7 @@ function setup() {
   gameStart = true;
   gameOver = false;
 
-  bgImgSmall = bgImg; // optional: can scale later in draw
+  bgImgSmall = bgImg; //can scale later in draw
   pipeTopImgSmall = pipeTopImg;
   pipeBottomImgSmall = pipeBottomImg;
 
@@ -162,6 +165,7 @@ function draw() {
     // collision detection
     if (!gameOver && pipes[i].hits(bird)) {
       gameOver = true;
+      gameOverSound.play();
     }
 
     // scoring only while game is running
@@ -264,6 +268,7 @@ function updateBird() {
     bird.y = height - bird.size / 2;
     bird.vy = 0;
     gameOver = true;
+    gameOverSound.play();
   }
 
   //ceiling
@@ -329,6 +334,16 @@ function keyPressed() {
   if (gameStart) {
     gameStart = false;
     gameOver = false;
+
+    // ensure audio context is running
+    if (
+      typeof getAudioContext === "function" &&
+      getAudioContext().state !== "running"
+    ) {
+      getAudioContext()
+        .resume()
+        .then(() => console.log("AudioContext resumed"));
+    }
 
     //bird bounce immeadiately
     bird.vy = jumpStrength;
@@ -408,7 +423,7 @@ function drawTryAgainButton() {
 
   noStroke();
   fill(0);
-  text("TRY AGAIN?", btnX, btnY);
+  text("SPACE TO TRY AGAIN", btnX, btnY);
   pop();
 }
 
@@ -421,8 +436,13 @@ class Pipe {
     this.x = width; // start at the right edge
     this.w = 180; // pipe width
     this.passed = false; // for scoring
-  }
 
+    this.hitInsetX = 22; // shrink left/right by this many pixels
+    this.hitTopTrim = 6; // move top pipe's effective bottom up
+    this.hitBottomTrim = 6; // move bottom pipe's effective top down
+
+    this.hitScale = 0.75; // 3/4 sized hitbox
+  }
   update() {
     this.x -= bgSpeed; // move left
   }
@@ -437,13 +457,31 @@ class Pipe {
   }
 
   hits(bird) {
-    // check collision with bird rectangle
-    if (
-      bird.x + bird.size / 2 > this.x &&
-      bird.x - bird.size / 2 < this.x + this.w &&
-      (bird.y - bird.size / 2 < this.top ||
-        bird.y + bird.size / 2 > this.bottom)
-    ) {
+    // horizontal bounds
+    const left = this.x + this.hitInsetX;
+    const right = this.x + this.w - this.hitInsetX;
+
+    //vertical gap edges
+    const topGap = this.top + this.hitTopTrim; // effective bottom edge of top pipe
+    const bottomGap = this.bottom - this.hitBottomTrim; // effective top edge of bottom pipe
+
+    // bird rectangle
+
+    const hb = (bird.size * bird.hitScale) / 2; // scaled hitbox
+
+    const birdLeft = bird.x - hb;
+    const birdRight = bird.x + hb;
+    const birdTop = bird.y - hb;
+    const birdBottom = bird.y + hb;
+
+    // horizontal overlap
+    const horizOverlap = birdRight > left && birdLeft < right;
+    // vertical overlap with top
+    const overlapTopPipe = birdTop < topGap;
+    // vertical overlap with bottom
+    const overlapBottomPipe = birdBottom > bottomGap;
+
+    if (horizOverlap && (overlapTopPipe || overlapBottomPipe)) {
       return true;
     }
     return false;
