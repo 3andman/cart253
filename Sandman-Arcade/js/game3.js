@@ -16,6 +16,7 @@ let slingImg;
 let potImg;
 let breakImg;
 let bkgImg;
+let retImg;
 
 const sling = {
   x: 0,
@@ -24,10 +25,13 @@ const sling = {
   targetX: 0,
 };
 
+const SLING_LAG = 0.05;
+
 function preload() {
   pixelFont = loadFont("assets/PressStart2P-Regular.ttf");
   slingImg = loadImage("assets/game3/sling.webp");
   bkgImg = loadImage("assets/game3/bkgnd.png");
+  retImg = loadImage("assets/game3/rtcle.png");
 }
 
 /**
@@ -65,7 +69,7 @@ function draw() {
   // show the start screen
   if (gameStart) {
     // draw background
-    background(213, 214, 183);
+    background("#D0D0D0");
     textAlign(CENTER, CENTER);
     textFont(pixelFont);
 
@@ -90,9 +94,14 @@ function draw() {
 
     // smoothing/lag
 
-    sling.x = lerp(sling.x, sling.targetX, 102);
+    sling.x = lerp(sling.x, sling.targetX, SLING_LAG);
 
     if (slingImg) image(slingImg, sling.x, sling.y, sling.size, sling.size);
+
+    // draw reticle
+    const retSize = 154;
+    imageMode(CENTER);
+    image(retImg, mouseX, mouseY, retSize, retSize);
   }
 
   if (gameOver) {

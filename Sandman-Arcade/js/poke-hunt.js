@@ -149,7 +149,7 @@ function windowResized() {
 
 function draw() {
   if (gameStart) {
-    background(213, 214, 183);
+    background("#D0D0D0");
     textAlign(CENTER, CENTER);
     textFont(pixelFont);
     textSize(96);

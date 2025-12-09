@@ -19,7 +19,7 @@ let score = 0;
 
 //Background Scrolling
 let bgX = 0;
-let bgSpeed = 5;
+let bgSpeed = 7;
 
 let pixelFont;
 
@@ -37,14 +37,20 @@ const restartDelay = 1000; // 3 second interval
 
 //Pipes
 let pipes = [];
-let pipeInterval = (1000, 200); //frames between pipe spawns
+let pipeInterval = 200; //frames between pipe spawns
 let frameCountSinceLastPipe = 0;
 let pipeTopImg;
 let pipeBottomImg;
 let bgImgSmall;
 let pipeTopImgSmall;
 let pipeBottomImgSmall;
+let flap;
+let pnt1;
+let pnt10;
+
+//sounds
 let gameOverSound;
+let track;
 
 //Physics
 const gravity = 0.5;
@@ -52,12 +58,16 @@ const jumpStrength = -11;
 
 // LOAD ASSETS \\
 function preload() {
-  bgImg = loadImage("assets/game2/bg-loop.jpg");
+  bgImg = loadImage("assets/game2/bg-loop.png ");
   birdImg = loadImage("assets/game2/bird.png");
   pixelFont = loadFont("assets/PressStart2P-Regular.ttf");
   pipeTopImg = loadImage("assets/game2/pipe_top.png");
   pipeBottomImg = loadImage("assets/game2/pipe_bottom.png");
   gameOverSound = loadSound("assets/game2/gameover.wav");
+  track = loadSound("assets/game2/track.mp3");
+  flap = loadSound("assets/game2/flap.mp3");
+  pnt1 = loadSound("assets/game2/1.mp3");
+  pnt10 = loadSound("assets/game2/10.mp3");
 }
 
 function setup() {
@@ -76,6 +86,11 @@ function setup() {
   //draws sized canvas and centers image
   createCanvas(targetWidth, targetHeight);
   imageMode(CENTER);
+  track.setVolume(0.3);
+  gameOverSound.setVolume(0.3);
+  flap.setVolume(0.5);
+  pnt1.setVolume(0.2);
+  pnt10.setVolume(0.5);
 
   textFont(pixelFont);
 
@@ -128,7 +143,7 @@ function draw() {
   // Show start screen and stop — no physics updates or HUD
   if (gameStart) {
     // background color behind the bg (optional)
-    background(213, 214, 183);
+    background("#D0D0D0");
 
     textAlign(CENTER, CENTER);
     textFont(pixelFont);
@@ -142,6 +157,7 @@ function draw() {
 
     // Big Start button
     drawStartButton();
+
     return;
   }
 
@@ -165,6 +181,7 @@ function draw() {
     // collision detection
     if (!gameOver && pipes[i].hits(bird)) {
       gameOver = true;
+      track.stop();
       gameOverSound.play();
     }
 
@@ -176,6 +193,10 @@ function draw() {
     ) {
       pipes[i].passed = true;
       score++;
+      pnt1.play();
+      if (score % 10 === 0) {
+        pnt10.play();
+      }
     }
 
     // remove offscreen pipes
@@ -186,7 +207,7 @@ function draw() {
 
   if (!gameOver && !gameStart) {
     // speed up the pipes
-    bgSpeed = min(bgSpeed + 0.004, 15); // tweak max speed
+    bgSpeed = min(bgSpeed + 0.004, 20); // tweak max speed
     // adjust pipe interval so spacing stays consistent
     const targetPipeDistance = 800; // pixels between pipes
     pipeInterval = targetPipeDistance / bgSpeed; // interval in frames
@@ -233,6 +254,8 @@ function draw() {
     if (gameOverTime === 0) {
       gameOverTime = millis();
     }
+
+    track.stop();
 
     return;
   }
@@ -312,7 +335,7 @@ function drawGameOverScreen() {
   stroke(0);
   strokeWeight(8);
   fill(255, 0, 0);
-  text("GAME OVER", width / 2, height / 2 - 100);
+  text("GAME OVER", width / 0, height / 2 - 100);
   pop();
 
   // score in yellow
@@ -331,9 +354,19 @@ function drawGameOverScreen() {
 // INPUTS \\
 function keyPressed() {
   //while on start screen
+  if (!gameOver && !gameStart) {
+    flap.play();
+  }
+
   if (gameStart) {
     gameStart = false;
     gameOver = false;
+
+    //start track
+    if (track.isLoaded() && !track.isPlaying()) {
+      track.loop();
+      track.play();
+    }
 
     // ensure audio context is running
     if (
@@ -347,6 +380,8 @@ function keyPressed() {
 
     //bird bounce immeadiately
     bird.vy = jumpStrength;
+
+    flap.play();
     return;
   }
 
@@ -368,10 +403,12 @@ function keyPressed() {
     frameCountSinceLastPipe = 0; // reset pipe timer
 
     // reset speed
-    bgSpeed = 5;
-    pipeInterval = 400;
+    bgSpeed = 7;
+    pipeInterval = 200;
 
     gameOverTime = 0; // reset timer
+
+    track.play();
     loop();
     return;
   }
@@ -413,7 +450,7 @@ function drawTryAgainButton() {
 
   const btnX = width / 2;
   const btnY = height / 2 + 100;
-  const btnW = 500;
+  const btnW = 900;
   const btnH = 120;
 
   fill(255);
