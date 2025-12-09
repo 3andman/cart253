@@ -9,12 +9,25 @@
 "use strict";
 
 let gameStart = true;
-let pixelFont; // needs to be loaded in preload()
+let pixelFont;
 let score = 0;
 let gameOver = false;
+let slingImg;
+let potImg;
+let breakImg;
+let bkgImg;
+
+const sling = {
+  x: 0,
+  y: 0,
+  size: 500,
+  targetX: 0,
+};
 
 function preload() {
   pixelFont = loadFont("assets/PressStart2P-Regular.ttf");
+  slingImg = loadImage("assets/game3/sling.webp");
+  bkgImg = loadImage("assets/game3/bkgnd.png");
 }
 
 /**
@@ -37,6 +50,11 @@ function setup() {
   createCanvas(targetWidth, targetHeight);
   imageMode(CENTER);
 
+  // initial sling position
+  sling.x = width / 2;
+  sling.y = height * 0.85; // how the sling sits on screen
+  sling.targetX = sling.x;
+
   textFont(pixelFont);
 }
 
@@ -46,6 +64,7 @@ function setup() {
 function draw() {
   // show the start screen
   if (gameStart) {
+    // draw background
     background(213, 214, 183);
     textAlign(CENTER, CENTER);
     textFont(pixelFont);
@@ -57,15 +76,32 @@ function draw() {
     text("Game 3", width / 2, height / 2 - 80);
 
     drawStartButton();
-    return; // important: stops the game from updating while on the menu
+    return; // stops the game from updating while on the menu
   }
+
+  // draw background and sling
+  if (!gameStart && !gameOver) {
+    // background
+    if (bkgImg) image(bkgImg, width / 2, height / 2, width, height);
+    else background(213, 214, 183);
+
+    // sling target follows the mouse
+    sling.targetX = constrain(mouseX, sling.size / 2, width - sling.size / 2);
+
+    // smoothing/lag
+
+    sling.x = lerp(sling.x, sling.targetX, 102);
+
+    if (slingImg) image(slingImg, sling.x, sling.y, sling.size, sling.size);
+  }
+
   if (gameOver) {
     drawGameOver();
     return;
   }
 }
 
-// same big start button used across your games
+// same big start button
 function drawStartButton() {
   push();
   rectMode(CENTER);
@@ -89,7 +125,7 @@ function drawStartButton() {
   pop();
 }
 
-// same game-over screen used across your games
+// game over screen
 function drawGameOver() {
   // dark full-screen background
   background(0);
@@ -115,12 +151,11 @@ function drawGameOver() {
   text(`SCORE: ${nf(score, 4)}`, width / 2, height / 2);
   pop();
 
-  // reuse the same try-again button visual
-  drawTryAgainButton(); // if you don't have this, use the drawStartButton() code as base
+  //try-again button
+  drawTryAgainButton();
 }
 
 function mousePressed() {
-  // at top of mousePressed()
   if (gameStart) {
     // check start button hit
     const btnX = width / 2;
@@ -141,7 +176,7 @@ function mousePressed() {
     return; // stop further click handling
   }
 
-  // if we're on the game-over screen and the try-again button was clicked, restart the game
+  //try again button = restart the game
   if (gameOver) {
     const btnX = width / 2;
     const btnY = height / 2 + 100;
@@ -153,11 +188,10 @@ function mousePressed() {
       mouseY > btnY - btnH / 2 &&
       mouseY < btnY + btnH / 2
     ) {
-      // reset minimal state and hide game-over
+      // reset state and hide game-over
       score = 0;
       gameOver = false;
-      gameStart = false; // leave menu hidden (game will start)
-      // any additional reset for game3 goes here (clear arrays, reset vars)
+      gameStart = false; // leave menu hidden
     }
     return;
   }
