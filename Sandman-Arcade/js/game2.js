@@ -88,7 +88,7 @@ function setup() {
   imageMode(CENTER);
   track.setVolume(0.3);
   gameOverSound.setVolume(0.3);
-  flap.setVolume(0.5);
+  flap.setVolume(0.4);
   pnt1.setVolume(0.2);
   pnt10.setVolume(0.5);
 
@@ -217,6 +217,7 @@ function draw() {
   //draw bird and hud
   drawBird();
   drawHud();
+  noCursor();
 
   //game over screen
   if (gameOver) {

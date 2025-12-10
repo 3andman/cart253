@@ -8,15 +8,30 @@
 
 "use strict";
 
+// states
 let gameStart = true;
 let pixelFont;
 let score = 0;
 let gameOver = false;
+
+// images
 let slingImg;
 let potImg;
 let breakImg;
 let bkgImg;
 let retImg;
+let nutImg;
+let nutBreakImg;
+
+// sounds
+let track;
+let slingSnd;
+let hitSnd;
+let overSnd;
+
+// falling pots
+let fallingPots = []; // current pots falling
+let nextPotTimer = 0; // frames until next pot spawn
 
 const sling = {
   x: 0,
@@ -25,13 +40,39 @@ const sling = {
   targetX: 0,
 };
 
-const SLING_LAG = 0.05;
+const slinLag = 0.05;
 
+// projectile settings
+const projectiles = [];
+const prjSize = 140;
+const prjFrames = 240; // lifetime while flying
+const prjSpeed = 0.04; // velocity multiplier
+const prjHitDist = 28; // distance to hit reticle
+const prjBreakFrames = 20; // length of break
+
+// pot settings
+const POT_MIN_INTERVAL = 90; // min frames between spawns
+const POT_MAX_INTERVAL = 240; // max frames between spawns
+const POT_MIN_VY = 2.0; // min downward speed
+const POT_MAX_VY = 6.0; // max downward speed
+const POT_MIN_SPACING = 120; // min horizontal distance between
+const POT_GRAVITY = 0.12; // gravity added to vy each frame
+const POT_MAX_ATTEMPTS = 8; // tries to find an x that meets spacing
+
+// preload duh
 function preload() {
   pixelFont = loadFont("assets/PressStart2P-Regular.ttf");
   slingImg = loadImage("assets/game3/sling.webp");
   bkgImg = loadImage("assets/game3/bkgnd.png");
   retImg = loadImage("assets/game3/rtcle.png");
+  potImg = loadImage("assets/game3/pot.png");
+  breakImg = loadImage("assets/game3/break.gif");
+  nutImg = loadImage("assets/game3/nut.webp");
+  nutBreakImg = loadImage("assets/game3/nutBreak.gif");
+  track = loadSound("assets/game3/track.mp3");
+  slingSnd = loadSound("assets/game3/slingSnd.mp3");
+  hitSnd = loadSound("assets/game3/hitSnd.mp3");
+  overSnd = loadSound("assets/game3/gameover.wav");
 }
 
 /**
@@ -53,6 +94,10 @@ function setup() {
   //draws sized canvas and centers image
   createCanvas(targetWidth, targetHeight);
   imageMode(CENTER);
+  track.setVolume(0.1);
+  slingSnd.setVolume(0.8);
+  hitSnd.setVolume(0.5);
+  overSnd.setVolume(0.3);
 
   // initial sling position
   sling.x = width / 2;
@@ -60,6 +105,8 @@ function setup() {
   sling.targetX = sling.x;
 
   textFont(pixelFont);
+
+  nextPotTimer = floor(random(POT_MIN_INTERVAL, POT_MAX_INTERVAL));
 }
 
 /**
@@ -89,12 +136,14 @@ function draw() {
     if (bkgImg) image(bkgImg, width / 2, height / 2, width, height);
     else background(213, 214, 183);
 
+    noCursor();
+
     // sling target follows the mouse
     sling.targetX = constrain(mouseX, sling.size / 2, width - sling.size / 2);
 
     // smoothing/lag
 
-    sling.x = lerp(sling.x, sling.targetX, SLING_LAG);
+    sling.x = lerp(sling.x, sling.targetX, slinLag);
 
     if (slingImg) image(slingImg, sling.x, sling.y, sling.size, sling.size);
 
@@ -107,6 +156,41 @@ function draw() {
   if (gameOver) {
     drawGameOver();
     return;
+  }
+
+  // render projectiles
+  for (let i = projectiles.length - 1; i >= 0; i--) {
+    const p = projectiles[i];
+
+    // physics
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.45; // gravity
+    p.life++;
+    p.angle += p.av;
+
+    // shrink a bit
+    const lifeFrac = constrain(1 - p.life / prjFrames, 0, 1);
+    p.displaySize = p.initSize * (0.7 + 0.3 * lifeFrac);
+
+    // draw nut
+    push();
+    translate(p.x, p.y);
+    rotate(p.angle);
+    imageMode(CENTER);
+    if (nutImg) image(nutImg, 0, 0, p.displaySize, p.displaySize);
+    pop();
+
+    // removal conditions
+    const offLeft = p.x + p.displaySize < 0;
+    const offRight = p.x - p.displaySize > width;
+    const offTop = p.y + p.displaySize < 0;
+    const offBottom = p.y - p.displaySize > height;
+    const tooOld = p.life > prjFrames;
+
+    if (offLeft || offRight || offTop || offBottom || tooOld) {
+      projectiles.splice(i, 1);
+    }
   }
 }
 
@@ -162,6 +246,8 @@ function drawGameOver() {
 
   //try-again button
   drawTryAgainButton();
+
+  overSnd.play();
 }
 
 function mousePressed() {
@@ -182,6 +268,13 @@ function mousePressed() {
       gameOver = false;
       score = 0;
     }
+
+    //start track
+    if (track.isLoaded() && !track.isPlaying()) {
+      track.loop();
+      track.play();
+    }
+
     return; // stop further click handling
   }
 
@@ -204,8 +297,34 @@ function mousePressed() {
     }
     return;
   }
-}
 
+  // spawn projectile toward cursor only when in game
+  if (!gameStart && !gameOver) {
+    // velocity from sling toward mouse
+    const dx = mouseX - sling.x;
+    const dy = mouseY - sling.y;
+
+    // scaled velocity (prjSpeed is intentionally small so projectiles are slow)
+    const vx = dx * prjSpeed;
+    const vy = dy * prjSpeed;
+
+    projectiles.push({
+      x: sling.x,
+      y: sling.y,
+      vx: vx,
+      vy: vy,
+      initSize: prjSize,
+      displaySize: prjSize,
+      life: 0,
+      angle: random(-0.5, 0.5),
+      av: random(-0.04, 0.04),
+      state: "flying",
+      hitTimer: 0,
+    });
+
+    slingSnd.play();
+  }
+}
 function drawTryAgainButton() {
   push();
   rectMode(CENTER);

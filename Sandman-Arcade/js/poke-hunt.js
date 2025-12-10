@@ -71,9 +71,9 @@ function setup() {
 
   createCanvas(targetWidth, targetHeight);
 
-  track.setVolume(0.3);
-  throwsnd.setVolume(0.5);
-  oversnd.setVolume(0.5);
+  track.setVolume(0.2);
+  throwsnd.setVolume(0.4);
+  oversnd.setVolume(0.3);
   imageMode(CENTER);
   lastSecond = millis();
 
@@ -210,6 +210,7 @@ function draw() {
   drawBall();
   drawHUD();
   drawPauseIcon();
+  noCursor();
 
   if (isPaused && !gameOver) {
     push();
