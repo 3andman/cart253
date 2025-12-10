@@ -74,6 +74,7 @@ function setup() {
   track.setVolume(0.2);
   throwsnd.setVolume(0.4);
   oversnd.setVolume(0.3);
+  catchsnd.setVolume(0.3);
   imageMode(CENTER);
   lastSecond = millis();
 
