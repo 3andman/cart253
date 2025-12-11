@@ -16,6 +16,9 @@ let score = 0;
 let pixelFont;
 let slingImg, potImg, breakImg, bkgImg, retImg, nutImg;
 let track, slingSnd, hitSnd, overSnd;
+let hurt, dead, low;
+let healthImages = [];
+let health = 3;
 
 //  Falling Pots
 let fallingPots = [];
@@ -38,9 +41,9 @@ const PRJ_SPEED = 0.06;
 const POT_MIN_INTERVAL = 30;
 const POT_MAX_INTERVAL = 140;
 const POT_MIN_VY = 2.0;
-const POT_MAX_VY = 10.0;
+const POT_MAX_VY = 5.0;
 const POT_MIN_SPACING = 50;
-const POT_GRAVITY = 0.08;
+const POT_GRAVITY = 0.07;
 const POT_MAX_ATTEMPTS = 8;
 const POT_BREAK_FRAMES = 20;
 
@@ -52,6 +55,9 @@ function preload() {
   retImg = loadImage("assets/game3/rtcle.png");
   potImg = loadImage("assets/game3/pot.png");
   nutImg = loadImage("assets/game3/nut.webp");
+  healthImages[0] = loadImage("assets/game3/health1.png"); // 1 heart
+  healthImages[1] = loadImage("assets/game3/health2.png"); // 2 hearts
+  healthImages[2] = loadImage("assets/game3/health3.png"); // 3 hearts
 
   for (let i = 0; i < 3; i++) {
     breakFrames[i] = loadImage(`assets/game3/break${i}.png`);
@@ -61,6 +67,9 @@ function preload() {
   slingSnd = loadSound("assets/game3/slingSnd.mp3");
   hitSnd = loadSound("assets/game3/hitSnd.mp3");
   overSnd = loadSound("assets/game3/gameover.wav");
+  hurt = loadSound("assets/game3/hurt.mp3");
+  dead = loadSound("assets/game3/dead.mp3");
+  low = loadSound("assets/game3/low.mp3");
 }
 
 //  Setup
@@ -86,7 +95,10 @@ function setup() {
   track.setVolume(0.1);
   slingSnd.setVolume(0.8);
   hitSnd.setVolume(0.1);
-  overSnd.setVolume(0.3);
+  overSnd.setVolume(0);
+  hurt.setVolume(0.1);
+  dead.setVolume(0.2);
+  low.setVolume(0.2);
 }
 
 //  Draw
@@ -98,6 +110,7 @@ function draw() {
 
   if (gameOver) {
     drawGameOverScreen();
+    cursor();
     return;
   }
 
@@ -105,7 +118,19 @@ function draw() {
   if (bkgImg) image(bkgImg, width / 2, height / 2, width, height);
   else background(213, 214, 183);
 
-  noCursor();
+  // Draw Score Bar
+  fill(255); // white text
+  textAlign(LEFT, CENTER);
+  textSize(36);
+  textFont(pixelFont);
+  text(`SCORE: ${score}`, 20, 40); // 20 px padding from left
+  pop();
+
+  if (!gameStart && !gameOver) {
+    noCursor();
+  } else {
+    cursor();
+  }
 
   // Spawn pots
   nextPotTimer--;
@@ -120,9 +145,12 @@ function draw() {
   // Draw sling and reticle
   sling.targetX = constrain(mouseX, sling.size / 2, width - sling.size / 2);
   sling.x = lerp(sling.x, sling.targetX, slingLag);
-
   if (slingImg) image(slingImg, sling.x, sling.y, sling.size, sling.size);
   image(retImg, mouseX, mouseY, 154, 154);
+
+  if (health > 0) {
+    image(healthImages[health - 1], 168, 140, 350, 175); // adjust size/position
+  }
 }
 
 //  Start Screen
@@ -210,7 +238,9 @@ function mousePressed() {
   ) {
     gameOver = false;
     gameStart = false;
+    health = 3;
     score = 0;
+    track.play();
     fallingPots = [];
     nextPotTimer = floor(random(POT_MIN_INTERVAL, POT_MAX_INTERVAL));
     overPlayed = false; // reset flag
@@ -285,6 +315,22 @@ function updatePots() {
   for (let i = fallingPots.length - 1; i >= 0; i--) {
     const pot = fallingPots[i];
 
+    // Check if pot hits the bottom
+    if (pot.state === "falling" && pot.y - pot.size / 2 > height) {
+      health--; // decrease health
+      fallingPots.splice(i, 1); // remove the pot
+      hurt.play();
+      if (health === 1) low.play();
+      if (health === 1) low.loop();
+
+      if (health <= 0) gameOver = true;
+      if (health === 0) dead.play();
+      if (health === 0) low.stop();
+      if (health === 0) track.stop();
+
+      continue; // skip drawing this pot
+    }
+
     push();
     translate(pot.x, pot.y);
     rotate(pot.angle);
@@ -293,6 +339,7 @@ function updatePots() {
       pot.vy += POT_GRAVITY;
       pot.y += pot.vy;
       pot.angle += pot.av;
+
       image(potImg, 0, 0, pot.size, pot.size);
     } else if (pot.state === "broken") {
       pot.vy = 0;
@@ -304,7 +351,6 @@ function updatePots() {
         pot.frame++;
         if (pot.frame >= pot.frames.length) {
           fallingPots.splice(i, 1);
-          continue;
         }
       }
     }
