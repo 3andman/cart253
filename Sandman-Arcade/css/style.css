@@ -61,7 +61,7 @@ body {
 }
 
 .menu-buttons button {
-  width: 55%;
+  width: 65%;
   padding: clamp(10px, 1.4vw, 18px) 0;
   border: 2px solid #000000;
   border-radius: 6px;
